@@ -443,34 +443,42 @@ mips_error mips_cpu_step(
             );
         }
 		
+		switch(opcode){
+			case 0x06: 
+			case 0x07: 
+			case 0x08: 
+				uint32_t get_val, res; 
+				res = data_i << 2;
+				if ((res >> 31) == 1)
+					res |= 0xFFFF0000;  
+				mips_error e = state->get_register(state, src1_i, &get_val);
+				break; 
+			default:; 
+		}
 		
-		if((opcode == 6) || (opcode == 7) && (dest_i == 0)){}
-			uint32_t get_val, res; 
-			res = data_i << 2;
-			if ((res >> 31) == 1){
-				res |= 0xFFFF0000;  
-			}
-			mips_error e = state->get_register(state, src1_i, &get_val);
-			if(opcode == 6){
+		switch(opcode){
+			case 0x06: 
 				if (state -> logLevel >= 1)
 					fprintf(state->logDst, "BLEZ %u, %u.\n", src1_i, data_i);
 				if((get_val >> 31 == 1)|(get_val == 0)){
 					addr_jump = res; 
 					if((state -> pcNext >> 31) == 1 | (res % 4) != 0 )
 						return mips_ExceptionInvalidAddress;
-				}			
-			}
-		
-		if((opcode == 7) && (dest_i == 0)){
-			if(state->logLevel >= 1){
-				fprintf(state->logDst, "BGTZ %u, %u.\n", src1_i, data_i);
-			}
-			if((get_val >> 31 == 0) && (get_val != 0)){
-				addr_jump = res;   
-				if(((state -> pcNext >> 31) == 1) | (res % 4) != 0)
-					return mips_ExceptionInvalidAddress;
-			}
-		}
+				}	
+				break; 
+			
+			case 0x07: 
+				if(dest_i == 0){
+					if(state->logLevel >= 1)
+						fprintf(state->logDst, "BGTZ %u, %u.\n", src1_i, data_i);
+					if(get_val >> 31 == 0 && !get_val){
+						addr_jump = res;   
+					if(state -> pcNext >> 31 == 1 | res % 4 != 0)
+						return mips_ExceptionInvalidAddress;
+					}
+				break;
+					
+				
 		if(opcode == 10 || opcode == 11){  
 		if (va < data_i)
 			mips_error e = state->set_register(dest_i, 1);
