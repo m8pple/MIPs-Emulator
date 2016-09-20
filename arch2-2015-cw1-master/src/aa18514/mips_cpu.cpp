@@ -284,7 +284,7 @@ mips_error mips_cpu_step(
 			break; 
 		
 		case 0x03: 
-			if (state -> logLevel >= 1){
+			if (state -> logLevel >= 1)
 				fprintf (state -> logDst, "sra %u, %u, %u.\n", dst, src2, shift); 
 			uint32_t shift_val;
 			mips_error e = state -> get_register(src2, &shift_val);
@@ -306,6 +306,7 @@ mips_error mips_cpu_step(
 					int64_t res = arg1*arg;
 					state->HI = res >> 32;
 					state->LO = res;
+				}
 			}
 			break;
 		
@@ -330,7 +331,7 @@ mips_error mips_cpu_step(
 			break;
 		
 		case 0x02:
-			if (state -> logLevel >= 1){
+			if (state -> logLevel >= 1)
 				fprintf (state -> logDst, "srl %u, %u, %u.\n", dst, src2, shift);
 			uint32_t src_val; 
 			mips_error e = state->get_register(state, src2, &src_val); 
@@ -359,75 +360,80 @@ mips_error mips_cpu_step(
 			break; 
 			/*logging level to be added*/
 		
-		if (function == 42){
+		case 0x2A: 
 			if (state -> logLevel >= 1)
 				fprintf(state->logDst, "slt %u, %u, %u.\n", dst, src1, src2);
 			if (va < vb)
 				state -> regs[dst] = 1; 
 			else
 				state -> regs[dst] = 0; 
-		}
+			break;
 		
-		if (function == 43){
+		case 0x2B: 
 			if (state -> logLevel >= 1)
 				fprintf(state->logDst, "slt %u, %u, %u.\n", dst, src1, src2);
 			if (va < vb)
 				state -> regs[dst] = 1; 
 			else
 				state -> regs[dst] = 0; 
-		}
+			break; 
 		
-	if (function == 0x22){
-		if (state->logLevel >= 1){
+		case 0x16:
+			if (state->logLevel >= 1)
 				fprintf(state->logDst, "sub %u, %u, %u.\n", dst, src1, src2);
-		} 
-		uint32_t result = va - vb; 
-		uint32_t vam = va >> 31; 
-		uint32_t vbm = va >> 31; 
-		if((vam != vbm) && (vbm == (result >> 31)))
-			return mips_ExceptionArithmeticOverflow;
-		else
-			state->regs[dst] = va - vb;
-	}
-	if (function == 0x23){
+			uint32_t result = va - vb; 
+			uint32_t vam = va >> 31; 
+			uint32_t vbm = va >> 31; 
+			if((vam != vbm) && (vbm == (result >> 31)))
+				return mips_ExceptionArithmeticOverflow;
+			else
+				state->regs[dst] = va - vb;
+			break;
+			
+		case 0x17:
 			if (state->logLevel >= 1)
 				fprintf(state->logDst, "subu %u, %u, %u.\n", dst, src1, src2);
             state->regs[dst] = va - vb;
-		}
+			break; 
 		
-		if (function == 0x26){
+		case 0x1B: 
 			if (state->logLevel >= 1)
 				fprintf(state->logDst, "xor %u, %u, %u.\n", dst, src1, src2);
             state->regs[dst] = va ^ vb;
-		}
+			break;
 		
-		if ((function == 0x24) && (shift == 0)){
-			if (state->logLevel >= 1)
-				fprintf(state->logDst, "and %u, %u, %u.\n", dst, src1, src2);
-            state->regs[dst] = va & vb;
-		}
+		case 0x18:
+			if(shift == 0){
+				if (state->logLevel >= 1)
+					fprintf(state->logDst, "and %u, %u, %u.\n", dst, src1, src2);
+				state->regs[dst] = va & vb;
+			}
+			break;
 		
-		if (function == 0x25){
+		case 0x19:
 			if (state->logLevel >= 1)
 				fprintf(state->logDst, "or %u, %u, %u.\n", dst, src1, src2);
             state->regs[dst] = va | vb; 
-		}
+			break;
 		
-		if (function == 0x2B){
+		case 0x2B:
 			if (state->logLevel >= 1)
                 fprintf(state->logDst, "stlu %u, %u, %u.\n", dst, src1, src2);
             if (va < vb)
 				state->regs[dst] = 1;
 			else
 				state-> regs[dst] = 0;
-		}
+			break; 
 
-        if((function ==  0x21) && (shift == 0)){ 
-		if(state->logLevel >= 1){
-                fprintf(state->logDst, "addu %u, %u, %u.\n", dst, src1, src2);
-            }
-        state->regs[dst] = va + vb;  
-        }
+        case 0x21: 
+			if(shift == 0){ 
+				if(state->logLevel >= 1)
+					fprintf(state->logDst, "addu %u, %u, %u.\n", dst, src1, src2);
+				state->regs[dst] = va + vb;  
+			}
+		break; 
+		default:; 
+		}
 		return mips_Success; 
 	 }
 	else{
