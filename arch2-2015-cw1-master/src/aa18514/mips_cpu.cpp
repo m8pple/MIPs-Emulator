@@ -121,6 +121,40 @@ uint32_t to_big(const uint8_t *pData)
         (((uint32_t)pData[3])<<0);
 }
 
+void trans_high_&_low(string operand, uint32_t dst){
+	if(state->logLevel >= 1){
+		fprintf (state -> logDst, "%u, %u.\n", operand, address)
+	}
+	switch(operand){
+		case "mthi": 
+			state->HI = state->regs[dst];
+			break; 
+		
+		case "mtlo":
+			state->LO = state->regs[dst];
+			break; 
+		
+		case "mfhi": 
+			state->regs[dst] = state->HI;
+			break; 
+		
+		case "mflo": 
+			state->regs[dst] = state->LO;
+			break; 
+		
+		default:; 
+	}
+}
+void pShift(string operand, mips_cpu_h state, string arg1, string arg2, string arg3){
+	if (state -> logLevel >= 1)
+		fprintf (state -> logDst, "%u %u, %u, %u.\n", operand, dst, src2, src1);
+	uint32_t val_to_shift; 
+	uint32_t val_shift_by;
+	mips_error e = mips_cpu_get_register(state, src2, &val_to_shift); 
+	e = mips_cpu_get_register(state, src1, &val_shift_by);
+	state -> regs[dst] = val_to_shift >> (val_shift_by & 31) ;
+}
+
 mips_error mips_cpu_step(
 	mips_cpu_h state	//! Valid (non-empty) handle to a CPU
 )
@@ -156,21 +190,23 @@ mips_error mips_cpu_step(
 	uint8_t data_from_mem[4];
 	string operand; 
 	if(state->regs[0] != 0) state->regs[0] = 0;
-	if((opcode == 2) | (opcode == 3)){
-		//This is J type
-		if (state -> logLevel >= 2){
+	if(opcode == 0x02 || opcode == 0x03){
+		if (state -> logLevel >= 2)
 			fprintf (state -> logDst, "J - type: address = %u.\n  instr=%08x\n", address, instruction);
-		}
 		
-		if (opcode == 2){
-			operand = "j"
-		}
+		switch(opcode){
+			//This is J type
+			case 0x02:
+				operand = "j"
+				break; 
 		
-		if (opcode == 3){
-			operand = "jal"
-			uint32_t effective_address = state->pcNext + 4; 
-			mips_error e = mips_cpu_set_register(state, 31, effective_address);
+			case 0x03: 
+				operand = "jal"
+				mips_error e = mips_cpu_set_register(state, 31, state->pcNext + 4);
+				break; 
+			default:; 
 		}
+			
 		if(state->logLevel >= 1){
 			fprintf (state -> logDst, "%u, %u.\n", operand, address)
 		}
@@ -179,204 +215,165 @@ mips_error mips_cpu_step(
 	}
 	else{
 	uint8_t addr_jump = 4; 
-     if(opcode == 0){
+	 if(opcode == 0x00){
         // This is R-type
 	   if(state->logLevel >= 2){
             fprintf(state->logDst, "R-Type : dst=%u, src1=%u, src2=%u, shift=%u, function=%u.\n  instr=%08x\n",
                 dst, src1, src2, shift, function, instruction
             );
         }
+		switch(function){
+			
+			case 0x00:
+				operand = "sll"
+				if (state -> logLevel >= 1){
+					fprintf (state -> logDst, "sll %u, %u, %u.\n", dst, src2, shift);
+				} 
+				uint32_t shift_val; 
+				mips_error e = mips_cpu_get_register(state, src2, &shift_val); 
+				state -> regs[dst] = shift_val << shift; 
+				break; 
+			
+			case 0x10: 
+				if (src1 | src2 | shift == 0)
+					trans_high_&_low("mfhi", dst); 
+				break;
 		
-		if (function == 0){
-			operand = "sll"
-			if (state -> logLevel >= 1){
-				fprintf (state -> logDst, "sll %u, %u, %u.\n", dst, src2, shift);
-			} 
-			uint32_t shift_val; 
-			mips_error e = mips_cpu_get_register(state, src2, &shift_val); 
-			state -> regs[dst] = shift_val << shift; 
-		}
+			case 0x11: 
+				if(src2 | dst | shift == 0)
+					trans_high_&_low("mthi", src1); 
+				break; 
+			
+			case 0x12: 
+				if(src1 | src2 | dst == 0)
+					trans_high_&_low("mflo", dst);
+				break; 
 		
-		if((function == 16) &&(src1 == 0) && (src2 ==0) && (shift == 0)){
-			if (state-> logLevel >= 1){
-				fprintf(state-> logDst, "mfhi %u.\n", dst);
-			}
-			//undefined behaviour!!!
-			uint32_t res = state->HI;
-			state->regs[dst] = res;
-		}
-		if((function == 17) && (src2 == 0) &&(dst == 0) &&(shift == 0)){
-			if(state->logLevel >= 1){
-				fprintf(state->logDst, "mthi %u.\n", src1);
-			}
-			state->HI = state->regs[src1];
-		}
-		
-		if ((function == 18) &&(src1 == 0) &&(src2 == 0) && (dst == 0)){
-			if(state->logLevel >= 1){
-				fprintf(state->logDst, "mflo %u.\n", dst);
-			}
-			state->regs[dst] = state->LO; 
-		}
-		
-		if((function == 19) && (src2 == 0) && (dst == 0) &&(shift == 0)){
-			if(state->logLevel >= 1){
-				fprintf(state->logDst, "mtlo %u.\n", src1);
-			}
-			state->LO = state->regs[src1]; //deal with undefined behaviour!!! 
-		}
-		
-		
-		if((function == 9) && (src2 ==0) && (shift == 0)){ 
-			if(state-> logLevel >= 1){
-				if (dst == 31){
-				fprintf (state -> logDst, "jalr %u .\n", src1);
+			case 0x13: 
+				if(src2 | dst | shift == 0)
+					trans_high_&_low("mtlo", src1);
+				break; 
+				
+			case 0x09: 
+				if(src2 | shift == 0){
+					if(state->logLevel >= 1){
+						if(dst == 31)
+							fprintf(state->logDst, "jalr %u .\n", src1);
+						else
+							fprintf(state->logDst, "jalr %u, %u.\n", dst, src1);
+					}
+					if(src1 == dst){
+						return mips_ExceptionInvalidInstruction; 
+					}
+					else{
+						state->regs[dst] = state->pcNext; 
+						addr_jump = state -> regs[src1];
+					}
 				}
-				else{
-				fprintf(state -> logDst, "jalr %u, %u.\n", dst, src1); 
+				break; 
+			
+		case 0x08: 
+			if(src2 | dst | shift == 0){
+				if (state -> logLevel >= 1)
+					fprintf (state -> logDst, "jr %u.\n", src1);
+				uint32_t reg; 
+				mips_error e = mips_cpu_get_register(state, src1, &reg);
+				if ((reg % 4) != 0){
+					return mips_ExceptionInvalidAddress; 
 				}
-			} 
-			if(src1 == dst){
-				return mips_ExceptionInvalidInstruction; 
 			}
-			else{
-				state->regs[dst] =(state->pcNext);
-				addr_jump = state->regs[src1];
-			}
-		}
+			break; 
 		
-		if((function == 8) && (src2 == 0) && (dst == 0) && (shift == 0)){
+		case 0x03: 
 			if (state -> logLevel >= 1){
-				fprintf (state -> logDst, "jr %u.\n", src1);
-			}
-			state -> pc = state -> pcNext; 
-			uint32_t reg; 
-			mips_error e = mips_cpu_get_register(state, src1, &reg);
-			if ((reg % 4) != 0){
-				return mips_ExceptionInvalidAddress; 
-			}
-		}
-		
-		if (function == 3){
-			if (state -> logLevel >= 1){
-				fprintf (state -> logDst, "sra %u, %u, %u.\n", dst, src2, shift);
-			}	 
+				fprintf (state -> logDst, "sra %u, %u, %u.\n", dst, src2, shift); 
 			uint32_t shift_val;
 			mips_error e = mips_cpu_get_register(state, src2, &shift_val);
 			uint32_t temp = shift_val >> shift; 
-			uint32_t sign = (shift_val >> 31); 
+			uint32_t sign = shift_val >> 31; 
 			if (sign == 1){
 				temp = ((0xFFFFFFFF << (31 - shift)) | temp);
 			}			
 			state -> regs[dst] = temp;
-		}
+			break;
 		
-		if((function == 24 ) && (shift == 0) && (dst == 0)){
-			if(state->logLevel >= 1){
-                fprintf(state->logDst, "mult %u, %u, %u.\n", dst, src1, src2);
-            }
-			int32_t va=state->regs[src1];
-            int32_t vb=state->regs[src2];
-			int64_t res = va*vb;
-			state->HI = res >> 32;
-			state->LO = res;
-		}
-		if (function == 7){
-			if (state -> logLevel >= 1){
-				fprintf (state -> logDst, "srav %u, %u, %u.\n", dst, src2, src1);
+		case 0x18: 
+			if(shift | dst == 0){
+				if(state->logLevel >= 1)
+					fprintf(state->logDst, "mult %u, %u, %u.\n", dst, src1, src2);
+				int64_t res = state->regs[src1]*state->regs[src2];
+				state->HI = res >> 32;
+				state->LO = res;
 			}
+			break;
+		
+		case 0x07: 
+			if (state -> logLevel >= 1)
+				fprintf (state -> logDst, "srav %u, %u, %u.\n", dst, src2, src1);
 			uint32_t shift_val; 
 			uint32_t shift_by;
 			mips_error e = mips_cpu_get_register(state, src2, &shift_val);
 			e = mips_cpu_get_register(state, src1, &shift_by);
 			uint32_t temp = shift_val >> (shift_by & 0x1F); 
-			if ((shift_val >> 31) == 1){
+			if (shift_val >> 31 == 1)
 				temp = ((0xFFFFFFFF << (31 - shift_by)) | temp);
-			}			
 			state -> regs[dst] = temp;
-		}
+			break; 
 		
-		if (function == 4){
-			if (state -> logLevel >= 1){
-				fprintf (state -> logDst, "sllv %u, %u, %u.\n", dst, src2, src1);
-			}
-			uint32_t val_to_shift; 
-			uint32_t val_shift_by;
-			mips_error e = mips_cpu_get_register(state, src2, &val_to_shift); 
-			e = mips_cpu_get_register(state, src1, &val_shift_by);
-			state -> regs[dst] = val_to_shift << (val_shift_by & 31) ; 
-		}
+		case 0x04: 
+			pShift("sllv", state, dst, src2, src1); 
+			break; 
 		
-		if (function == 6){
-			if (state -> logLevel >= 1){
-				fprintf (state -> logDst, "srlv %u, %u, %u.\n", dst, src2, src1);
-			}
-			uint32_t val_to_shift; 
-			uint32_t val_shift_by;
-			mips_error e = mips_cpu_get_register(state, src2, &val_to_shift); 
-			e = mips_cpu_get_register(state, src1, &val_shift_by);
-			state -> regs[dst] = val_to_shift >> (val_shift_by & 31) ; 
-		}
+		case 0x06:
+			pShift("srlv", state, dst, src2, src1); 
+			break;
 		
-		if (function == 2){
+		case 0x02:
 			if (state -> logLevel >= 1){
 				fprintf (state -> logDst, "srl %u, %u, %u.\n", dst, src2, shift);
-			}
-				uint32_t shift_right; 
-				mips_error e = mips_cpu_get_register(state, src2, &shift_right); 
-				state -> regs[dst] = shift_right >> shift;
-		}
+			uint32_t shift_right; 
+			mips_error e = mips_cpu_get_register(state, src2, &shift_right); 
+			state -> regs[dst] = shift_right >> shift;
+			break;
 		
+		case 0x20:
+			if(shift == 0){
+				if (state->logLevel >= 1)
+					fprintf(state->logDst, "add %u, %u, %u.\n", dst, src1, src2);
+				uint32_t result = va+vb;
+				uint32_t resm = result >> 31; 
+				uint32_t vam = va >> 31; 
+				uint32_t vbm = vb >> 31;   
+				if((vam == vbm) && (vam != resm))
+					return mips_ExceptionArithmeticOverflow;
+				state->regs[dst] = result;
+				}
+			break;
 		
-		if ((function == 0x20) && (shift == 0)){
-			if (state->logLevel >= 1){
-				fprintf(state->logDst, "add %u, %u, %u.\n", dst, src1, src2);
-			}
-			uint32_t result = va+vb;
-			uint32_t resm = result >> 31; 
-			uint32_t vam = va >> 31; 
-			uint32_t vbm = vb >> 31;   
-			if((vam == vbm) && (vam != resm)){
-				return mips_ExceptionArithmeticOverflow;
-			}
-			state->regs[dst] = result;
-		}
-		if(function == 25 || function == 24){}
+		case 0x19:
+		case 0x18: 
 			uint64_t result = va*vb; 
-			state -> HI = result << 32; 
-			state -> LO = result;
-		
-		if(function == 25){
+			state->HI  = result << 32; 
+			state->LO = result; 
+			break; 
 			/*logging level to be added*/
-		}
-		
-		if (function == 24){
-			/*logging level to be added*/
-		
-		}
 		
 		if (function == 42){
-			if (state -> logLevel >= 1){
+			if (state -> logLevel >= 1)
 				fprintf(state->logDst, "slt %u, %u, %u.\n", dst, src1, src2);
-			}
-			if (va < vb){
+			if (va < vb)
 				state -> regs[dst] = 1; 
-			}
-			else{ 
+			else
 				state -> regs[dst] = 0; 
-			}
 		}
 		
 		if (function == 43){
-			if (state -> logLevel >= 1){
+			if (state -> logLevel >= 1)
 				fprintf(state->logDst, "slt %u, %u, %u.\n", dst, src1, src2);
-			}
-			if (va < vb){
+			if (va < vb)
 				state -> regs[dst] = 1; 
-			}
-			else{
+			else
 				state -> regs[dst] = 0; 
-			} 
 		}
 		
 	if (function == 0x22){
@@ -386,45 +383,38 @@ mips_error mips_cpu_step(
 		uint32_t result = va - vb; 
 		uint32_t vam = va >> 31; 
 		uint32_t vbm = va >> 31; 
-		if((vam != vbm) && (vbm == (result >> 31))){
+		if((vam != vbm) && (vbm == (result >> 31)))
 			return mips_ExceptionArithmeticOverflow;
-		}
-		else{
+		else
 			state->regs[dst] = va - vb;
-		}
 	}
 	if (function == 0x23){
-			if (state->logLevel >= 1){
+			if (state->logLevel >= 1)
 				fprintf(state->logDst, "subu %u, %u, %u.\n", dst, src1, src2);
-			}
             state->regs[dst] = va - vb;
 		}
 		
 		if (function == 0x26){
-			if (state->logLevel >= 1){
+			if (state->logLevel >= 1)
 				fprintf(state->logDst, "xor %u, %u, %u.\n", dst, src1, src2);
-			}
             state->regs[dst] = va ^ vb;
 		}
 		
 		if ((function == 0x24) && (shift == 0)){
-			if (state->logLevel >= 1){
+			if (state->logLevel >= 1)
 				fprintf(state->logDst, "and %u, %u, %u.\n", dst, src1, src2);
-			}
             state->regs[dst] = va & vb;
 		}
 		
 		if (function == 0x25){
-			if (state->logLevel >= 1){
+			if (state->logLevel >= 1)
 				fprintf(state->logDst, "or %u, %u, %u.\n", dst, src1, src2);
-			}
             state->regs[dst] = va | vb; 
 		}
 		
 		if (function == 0x2B){
-			if (state->logLevel >= 1){
+			if (state->logLevel >= 1)
                 fprintf(state->logDst, "stlu %u, %u, %u.\n", dst, src1, src2);
-			}
             if (va < vb){
 				state->regs[dst] = 1;
 			}
