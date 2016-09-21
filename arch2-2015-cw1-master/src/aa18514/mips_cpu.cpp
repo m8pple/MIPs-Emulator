@@ -287,7 +287,7 @@ mips_error mips_cpu_step(
 			if (state -> logLevel >= 1)
 				fprintf (state -> logDst, "sra %u, %u, %u.\n", dst, src2, shift); 
 			uint32_t shift_val;
-			mips_error e = state -> get_regijkl'ster(src2, &shift_val);
+			mips_error e = state -> get_register(src2, &shift_val);
 			uint32_t temp = shift_val >> shift; 
 			uint32_t sign = shift_val >> 31; 
 			if (sign == 1)
