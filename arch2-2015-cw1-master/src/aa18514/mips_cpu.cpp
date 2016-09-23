@@ -225,7 +225,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 			
 			case 0x00:
 				operand = "sll"
-				if (state -> logLevel >= 1){
+				if (state -> logLevel > 0){
 					fprintf (state -> get_file_handler(), "sll %u, %u, %u.\n", dst, src2, shift);
 				}  
 				e = state->get_register(src2, &result); 
@@ -234,8 +234,10 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 				break; 
 			
 			case 0x10: 
-				if (src1 | src2 | shift == 0)
-					trans_high_low("mfhi", address, dst, state); 
+				if (src1 | src2 | shift == 0){
+					operand = "mfhi";
+					trans_high_low(operand, address, dst, state); 
+				}
 				break;
 		
 			case 0x11: 
@@ -265,7 +267,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 						e = mips_ExceptionInvalidInstruction; 
 					}
 					else{
-						result = state->get_pcNext; 
+						result = state->get_pcNext(); 
 						e = state->get_register(src1, &memory_jump);
 					}
 				}
