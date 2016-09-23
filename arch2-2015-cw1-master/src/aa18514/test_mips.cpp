@@ -8,7 +8,6 @@ int main()
 	fp = fopen("test.txt", "w");
     mips_mem_h mem=mips_mem_create_ram(4096, 4);
     mips_cpu_h cpu=mips_cpu_create(mem);
-    mips_cpu_set_pc(cpu, 0);
     mips_error e=mips_cpu_set_debug_level(cpu, 4, fp);
     
 	if(e!=mips_Success){
@@ -20,8 +19,8 @@ int main()
     // 1 - Setup an instruction in ram
     // addu r3, r4, r5
 
-e = mips_cpu_set_register(cpu, 6, 0x80000000);
-e = mips_cpu_set_register(cpu, 8, 0x80000000); 
+e = cpu->set_register(6, 0x80000000);
+e = cpu->set_register(8, 0x80000000); 
 
  uint32_t instr =
         (0ul << 26) // opcode = 0
@@ -47,7 +46,7 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         |
         (45ul << 0))
         ;  
-	e=mips_cpu_set_register(cpu, 9, 10);
+	e=cpu->set_register(9, 10);
 	addi(mem, cpu, instr, 55, fp);
 	
 	 instr =
@@ -59,8 +58,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
 		|
         (0x00000002ul << 0)) // dst = r3
         ; 
-	 e=mips_cpu_set_register(cpu, 9, 10);
-	 e=mips_cpu_set_register(cpu, 19, 10);		
+	 e=cpu->set_register(9, 10);
+	 e=cpu->set_register(19, 10);		
 	 beq(mem, cpu, instr, 28, fp);
  
 	  instr =
@@ -72,8 +71,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
 		|
         (0x00000002ul << 0)) // dst = r3
         ; 
-	 e=mips_cpu_set_register(cpu, 9, 10);
-	 e=mips_cpu_set_register(cpu, 19, 11);		
+	 e=cpu->set_register(9, 10);
+	 e=cpu->set_register(19, 11);		
 	 beq(mem, cpu, instr, 36, fp);
 
 	instr =
@@ -85,7 +84,7 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         |
         (3ul<< 0) // dst = r0
         ;
-	e = mips_cpu_set_register(cpu, 6, 1);
+	e = cpu->set_register(6, 1);
 	
 	bgtz(mem, cpu, instr, 52 , fp);	
 
@@ -98,7 +97,7 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         |
         (3ul<< 0) // dst = r0
         ;
-	e = mips_cpu_set_register(cpu, 6, -1);
+	e = cpu->set_register(6, -1);
 	
 	bltz(mem, cpu, instr, 68, fp);	
 	
@@ -111,7 +110,7 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         |
         (3ul<< 0) // dst = r0
         ;
-	e = mips_cpu_set_register(cpu, 6, 2);
+	e = cpu->set_register(6, 2);
 	
 	bltz(mem, cpu, instr, 76, fp);
 	
@@ -126,7 +125,7 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         |
         (16ul << 0))
         ;  	
-	e=mips_cpu_set_register(cpu, 9, 10);
+	e=cpu->set_register(9, 10);
 	XORI(mem, cpu, instr, 26, fp);
 	 
 	  instr =
@@ -150,7 +149,7 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
 			4, 
 			rec
 		);
-	 e=mips_cpu_set_register(cpu, 9, 4);
+	 e=cpu->set_register(9, 4);
 	lw(mem, cpu, instr, 0xFF00, fp);
 	 
 	instr =
@@ -167,8 +166,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         (0x25 << 0);		
  
     // 2 - put register values in cpu
-    e=mips_cpu_set_register(cpu, 9, 40);
-    e=mips_cpu_set_register(cpu, 10, 50);
+    e=cpu->set_register(9, 40);
+    e=cpu->set_register(10, 50);
     OR(mem, cpu, instr, 40| 50, fp);
 
 	 instr =
@@ -180,7 +179,7 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         |
         (10ul << 0) // dst = r3
         ;  
-    e=mips_cpu_set_register(cpu, 9, 40);
+    e=cpu->set_register(9, 40);
 	
     addiu(mem, cpu, instr, 50, fp);
  
@@ -198,8 +197,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         (0x22 << 0);
     
     // 2 - put register values in cpu
-    e=mips_cpu_set_register(cpu, 22, 50);
-    e=mips_cpu_set_register(cpu, 23, 40);
+    e=cpu->set_register(22, 50);
+    e=cpu->set_register(23, 40);
     subu(mem, cpu, instr, 10, fp);  
     
 	// 1 - Setup an instruction in ram
@@ -217,8 +216,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         (0x26 << 0);
     
     // 2 - put register values in cpu
-    e=mips_cpu_set_register(cpu, 25, 1);
-    e=mips_cpu_set_register(cpu, 27, 1);
+    e=cpu->set_register(25, 1);
+    e=cpu->set_register(27, 1);
     XOR(mem, cpu, instr, 0, fp);    
     
     // 1 - Setup an instruction in ram
@@ -237,8 +236,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         (0x24 << 0);
  	
     // 2 - put register values in cpu
-    e=mips_cpu_set_register(cpu, 14, 40);
-    e=mips_cpu_set_register(cpu, 15, 50);
+    e=cpu->set_register(14, 40);
+    e=cpu->set_register(15, 50);
     AND(mem, cpu, instr, (40 & 50), fp);
     
    	instr =
@@ -256,8 +255,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
     
     
     // 2 - put register val
-	e=mips_cpu_set_register(cpu, 4, 1);
-    e=mips_cpu_set_register(cpu, 5, 2);
+	e=cpu->set_register(4, 1);
+    e=cpu->set_register( 5, 2);
     sllv(mem, cpu, instr, 4, fp);
 
    	instr =
@@ -274,8 +273,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         (0x21 << 0);
     
     // 2 - put register values in cpu
-    e=mips_cpu_set_register(cpu, 4, 40);
-    e=mips_cpu_set_register(cpu, 5, 50);
+    e=cpu->set_register( 4, 40);
+    e=cpu->set_register( 5, 50);
 	addu(mem, cpu, instr, 90, fp);   
     
     // 1 - Setup an instruction in ram
@@ -292,8 +291,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         |
         (0x20 << 0);
 
-    e=mips_cpu_set_register(cpu, 4, 0xFFFFFFFF);
-    e=mips_cpu_set_register(cpu, 5, 0xFFFFFFFF);
+    e=cpu->set_register( 4, 0xFFFFFFFF);
+    e=cpu->set_register( 5, 0xFFFFFFFF);
     add(mem, cpu, instr, 0xFFFFFFFE, fp);
         
     instr =
@@ -310,8 +309,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         (0x21 << 0);
     
     // 2 - put register values in cpu
-    e=mips_cpu_set_register(cpu, 4, 4294967296);
-    e=mips_cpu_set_register(cpu, 5, 4294967296);
+    e=cpu->set_register( 4, 4294967296);
+    e=cpu->set_register( 5, 4294967296);
 	addu(mem, cpu, instr, 0, fp);
 	
 	    
@@ -328,8 +327,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         ;
     
     // 2 - put register values in cpu
-    e= mips_cpu_set_register(cpu, 19, 28); 
-    sw(mem, cpu, instr, 28, fp); 
+    e= cpu->set_register( 19, 28); 
+    sw(mem,  instr, 28, fp); 
 	 
 	 uint32_t res = 0xA4218926;
 	 uint8_t buffer[4]; 
@@ -352,7 +351,7 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         |
         (4ul << 0)
 ;		// dst = r0
-	e = mips_cpu_set_register(cpu, 9, 29);
+	e = cpu->set_register( 9, 29);
    LB(mem, cpu, instr, 33, fp);
    
     res = 0xA4FF89FF; 
@@ -375,7 +374,7 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         |
         (4ul << 0)
 ;		// dst = r0
-	e = mips_cpu_set_register(cpu, 9, 29);
+	e = cpu->set_register( 9, 29);
    LB(mem, cpu, instr, -1, fp);
    
    instr =
@@ -387,7 +386,7 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         |
         (4ul << 0)
 ;		// dst = r0
-	e = mips_cpu_set_register(cpu, 9, 29);
+	e = cpu->set_register( 9, 29);
    LBU(mem, cpu, instr, 0xFF, fp);
    
    instr =
@@ -399,8 +398,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         |
         (4ul << 0)
 ;		
-	e = mips_cpu_set_register(cpu, 9, 25);
-	e = mips_cpu_set_register(cpu, 19, 10);
+	e = cpu->set_register( 9, 25);
+	e = cpu->set_register( 19, 10);
 	SB(mem, cpu, instr, 10, fp);
 	
 	instr = 
@@ -415,8 +414,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         (0ul << 6) // shift = 0
         |
         (0x22 << 0);
-   e = mips_cpu_set_register(cpu, 6, -8);
-   e = mips_cpu_set_register(cpu, 8, -2);
+   e = cpu->set_register( 6, -8);
+   e = cpu->set_register( 8, -2);
    sub(mem, cpu, instr, -6, fp);
    
      instr =
@@ -442,8 +441,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         (0ul << 6) // shift = 0
         |
         (0x22 << 0);
-   e = mips_cpu_set_register(cpu, 6, -2);
-   e = mips_cpu_set_register(cpu, 8, -2);
+   e = cpu->set_register( 6, -2);
+   e = cpu->set_register( 8, -2);
    sub(mem, cpu, instr, 0, fp);
    
    instr = 
@@ -455,8 +454,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         |
         (0ul << 0); // shift = 0
         
-   e = mips_cpu_set_register(cpu, 9, -4);
-   e = mips_cpu_set_register(cpu, 10, -4);
+   e = cpu->set_register( 9, -4);
+   e = cpu->set_register( 10, -4);
    uint32_t x; 
    e = mips_cpu_get_pc(cpu, &x); 
    bne(mem, cpu, instr, x + 8, fp);
@@ -470,8 +469,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         |
         (2ul << 0); // shift = 0
    e = mips_cpu_get_pc(cpu, &x);
-   e = mips_cpu_set_register(cpu, 6, 1);
-   e = mips_cpu_set_register(cpu, 8, 1);
+   e = cpu->set_register( 6, 1);
+   e = cpu->set_register( 8, 1);
    bne(mem, cpu, instr, x + 8, fp);
    
    instr = 
@@ -482,7 +481,7 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         (8ul << 16) // srcb = r5
         |
         (2ul << 0); // shift = 0
-  e = mips_cpu_set_register(cpu, 6, 56); 
+  e = cpu->set_register( 6, 56); 
     res = 0x89261234;
     buffer[0]=(res >>24)&0xFF;
     buffer[1]=(res >>16)&0xFF;
@@ -508,8 +507,8 @@ e = mips_cpu_set_register(cpu, 8, 0x80000000);
         (0ul << 6) // shift = 0
         |
         (0x2B << 0);
-e = mips_cpu_set_register(cpu, 6, 0xFFFFFFFF);
-e = mips_cpu_set_register(cpu, 7, 0x00000002);
+e = cpu->set_register( 6, 0xFFFFFFFF);
+e = cpu->set_register( 7, 0x00000002);
 SLTU(mem, cpu, instr, 0, fp);
 
 instr = 
@@ -539,7 +538,7 @@ instr =
         (3ul << 6) // shift = 0
         |
         (0x03 << 0);
-e = mips_cpu_set_register(cpu, 7, 64); 
+e = cpu->set_register( 7, 64); 
 SRA(mem, cpu, instr, 8, fp);
 
 instr = 
@@ -554,7 +553,7 @@ instr =
         (3ul << 6) // shift = 0
         |
         (0x03 << 0);
-e = mips_cpu_set_register(cpu, 7, -64); 
+e = cpu->set_register( 7, -64); 
 SRA(mem, cpu, instr, -8, fp);
 
 instr = 
@@ -569,7 +568,7 @@ instr =
         (0ul << 6) // shift = 0
         |
         (0x03 << 0);
-e = mips_cpu_set_register(cpu, 7, 10); 
+e = cpu->set_register( 7, 10); 
 SRA(mem, cpu, instr, 10, fp);
 
 
@@ -585,8 +584,8 @@ instr =
         (0ul << 6) // shift = 0
         |
         (0x07 << 0);
-	e = mips_cpu_set_register(cpu, 8, -1);
-	e = mips_cpu_set_register(cpu, 7, 0xFFFFFFFF); 
+	e = cpu->set_register( 8, -1);
+	e = cpu->set_register(cpu, 7, 0xFFFFFFFF); 
 	SRAV(mem, cpu, instr, -1, fp);
 	
 instr = 
@@ -601,8 +600,8 @@ instr =
         (0ul << 6) // shift = 0
         |
         (0x07 << 0);
-	e = mips_cpu_set_register(cpu, 8, -1);
-	e = mips_cpu_set_register(cpu, 7, 0xF0000000); 
+	e = cpu->set_register( 8, -1);
+	e = cpu->set_register(cpu, 7, 0xF0000000); 
 	SRAV(mem, cpu, instr, -1, fp);
 	
 instr = 
@@ -617,8 +616,8 @@ instr =
         (0ul << 6) // shift = 0
         |
         (0x07 << 0);
-	e = mips_cpu_set_register(cpu, 8, -1);
-	e = mips_cpu_set_register(cpu, 7, 0x0F000000); 
+	e = cpu->set_register( 8, -1);
+	e = cpu->set_register(cpu, 7, 0x0F000000); 
 	SRAV(mem, cpu, instr, 0, fp);
 	
 	instr = 
@@ -633,7 +632,7 @@ instr =
         (24ul << 6) // shift = 0
         |
         (0x02 << 0);
-	e = mips_cpu_set_register(cpu, 7, 0x0F000000); 
+	e = cpu->set_register( 7, 0x0F000000); 
 	SRL(mem, cpu, instr, 15, fp);
 
 	instr = 
@@ -648,7 +647,7 @@ instr =
         (45ul << 6) // shift = 0
         |
         (0x02 << 0);
-	e = mips_cpu_set_register(cpu, 7, -1); 
+	e = cpu->set_register( 7, -1); 
 	SRL(mem, cpu, instr, 0x7FFFF, fp);
 	
 	
@@ -664,7 +663,7 @@ instr =
         (28ul << 6) // shift = 0
         |
         (0x02 << 0);
-	e = mips_cpu_set_register(cpu, 7, -2); 
+	e = cpu->set_register( 7, -2); 
 	SRL(mem, cpu, instr, 15, fp);
 	uint8_t recg[4]; recg[0] = 0; recg[1] = 0; recg[2] = 0; recg[3] = 0; 
 	uint32_t pc1;
@@ -682,8 +681,8 @@ instr =
 	(10ul << 0);
 	J(mem, cpu, instr, 0x00000028, fp);
 	
-e=mips_cpu_set_register(cpu, 6, 0x0000000A);
-e= mips_cpu_set_register(cpu, 7, 0x0000000A);
+e=cpu->set_register( 6, 0x0000000A);
+e= cpu->set_register( 7, 0x0000000A);
 
  instr =
         (0ul << 26) // opcode = 0
@@ -710,7 +709,7 @@ instr =
         |
         (45ul << 0))
         ;  
-	e=mips_cpu_set_register(cpu, 9, -10);
+	e=cpu->set_register( 9, -10);
 	addi(mem, cpu, instr, 35, fp);
 	
 instr =
@@ -722,7 +721,7 @@ instr =
         |
         (45ul << 0))
         ;  
-	e=mips_cpu_set_register(cpu, 9, -90);
+	e=cpu->set_register( 9, -90);
 	addi(mem, cpu, instr, -45, fp);
 	
 	instr =
@@ -734,7 +733,7 @@ instr =
         |
         (45ul << 0))
         ;  
-	e=mips_cpu_set_register(cpu, 9, -2);
+	e=cpu->set_register( 9, -2);
 	addi(mem, cpu, instr, 43, fp);
 	
 	
@@ -764,7 +763,7 @@ instr =
        // (0ul << 6) // shift = 0
        // |
        // (0x09 << 0);
-//	e = mips_cpu_set_register(cpu, 2, 34);
+//	e = cpu->set_register(cpu, 2, 34);
 //	JALR(mem, cpu, instr, 0x00000022, fp);
 	mips_test_end_suite();
     

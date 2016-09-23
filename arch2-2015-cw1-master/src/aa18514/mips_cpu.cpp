@@ -195,13 +195,13 @@ mips_error decode_J_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 			
 		if(state->logLevel >= 1)
 			fprintf (state -> get_file_handler(), "%u, %u.\n", operand, address)
-		state->set_pc(state->get_pcNext);
-		state->set_pcNext((address << 2) | (state->get_pcNext) & 0xF00000);
+		state->set_pc(state->get_pcNext());
+		state->set_pcNext((address << 2) | (state->get_pcNext()) & 0xF00000);
 		return e; 
 }
 
 mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t opcode){
-	uint8_t addr_jump = 4; 
+		uint8_t memory_jump = 4; 
 		uint32_t src1 = (instruction>> 21) & 0x1F;
 		uint32_t src2 = (instruction>> 16) & 0x1F;   
 		uint32_t dst =  (instruction>> 11 ) & 0x1F;
@@ -266,7 +266,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 					}
 					else{
 						result = state->get_pcNext; 
-						e = state->get_register(src1, &addr_jump);
+						e = state->get_register(src1, &memory_jump);
 					}
 				}
 				break; 
@@ -426,6 +426,8 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		}
 		if (e == mips_Success)
 			e = state->set_register(dst, result);
+		state->set_pc(state->get_pcNext());
+		state->set_pcNext(state->get_pcNext() + 4);
 		return e; 
 
 }
@@ -433,6 +435,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t opcode){
 		uint32_t src1_i, dest_i, data_i, address, relative_address, va, result; 
 		uint8_t data_from_mem[4];
+		uint8_t memory_jump = 4; 
 		src1_i = (instruction >> 21) & 0x1F;
 		dest_i = (instruction >> 16) & 0x1F; 
 		data_i = instruction & 0x0000FFFF;
@@ -460,7 +463,7 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 				if (state -> logLevel >= 1)
 					fprintf(state -> get_file_handler(), "BLEZ %u, %u.\n", src1_i, data_i);
 				if((get_val >> 31 == 1)|(get_val == 0)){
-					addr_jump = res; 
+					memory_jump = res; 
 					if((state -> pcNext >> 31) == 1 | (res % 4) != 0 )
 						return mips_ExceptionInvalidAddress;
 				}	
@@ -471,7 +474,7 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 					if(state->logLevel >= 1)
 						fprintf(state -> get_file_handler(), "BGTZ %u, %u.\n", src1_i, data_i);
 					if(get_val >> 31 == 0 && !get_val)
-						addr_jump = res;   
+						memory_jump = res;   
 					if(state -> pcNext >> 31 == 1 | res % 4 != 0)
 						return mips_ExceptionInvalidAddress;
 					}
@@ -704,7 +707,7 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 				res = data_i << 2;
 				if (res >> 31)
 					res = 0xFFFF0000 | uint32_t(res);
-				addr_jump =   res; 
+				memory_jump =   res; 
 				if(state -> get_pcNext() >> 31 | res % 4 )
 					return mips_ExceptionInvalidAddress;
 			}
@@ -722,9 +725,9 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 					if(state -> logLevel >= 1)
 						fprintf (state -> get_file_handler(), "BGEZ %u, %u.\n", src1_i, data_i);
 					if(shift_left >> 15 == 1 && getval >> 31 == 0)
-						addr_jump = 0xFFFF0000| shift_left;
+						memory_jump = 0xFFFF0000| shift_left;
 					else if((shift_left >> 15) & (getval >> 31) == 0)
-						addr_jump = shift_left;
+						memory_jump = shift_left;
 					break;
 				
 				case 0x11: 
@@ -732,14 +735,14 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 						fprintf (state -> get_file_handler(), "BGEZAL %u, %u.\n", src1_i, data_i);
 					e = state->set_register(31, state->get_pcNext() + 4); 
 					if (!getval >> 31)
-						addr_jump = res; 
+						memory_jump = res; 
 					break; 
 				
 				case 0x00: 
 					if(state -> logLevel >= 1)
 						fprintf (state -> get_file_handler(), "BLTZ %u, %u.\n", src1_i, data_i);
 					if (getval >> 31)
-						addr_jump = res; 
+						memory_jump = res; 
 					break;
 					
 				case 0x16: 
@@ -747,7 +750,7 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 						fprintf(state -> get_file_handler(), "BLTZAL %u, %u.\n", src1_i, data_i);	
 					e = state->set_register(31, state->get_pcNext() + 4);
 					if (getval >> 31)
-						addr_jump = res; 
+						memory_jump = res; 
 					break; 
 				default:;	
 			}
@@ -764,7 +767,7 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 					res = 0xFFFF0000 | uint32_t(shift_left);
 				else
 					res = uint32_t(shift_left);
-				addr_jump =  res; 
+				memory_jump =  res; 
 			}
 			break;
 		
@@ -806,10 +809,9 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 			default:;
 		}
 		state->set_pc(state->get_pcNext());
-		state->set_pcNext((state->get_pcNext()) + addr_jump); 
-		return mips_Success; 
+		state->set_pcNext((state->get_pcNext()) + memory_jump); 
+		return e; 
 	}
-}
 
 mips_error mips_cpu_step(
 	mips_cpu_h state	//! Valid (non-empty) handle to a CPU
