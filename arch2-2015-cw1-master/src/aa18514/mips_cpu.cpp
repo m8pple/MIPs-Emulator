@@ -7,8 +7,6 @@ using namespace std;
 class mips_cpu_impl
 {
 public: 
-	FILE* logDst; 
-	unsigned logLevel; 
 	void set_pc(uint32_t val){
 		pc = val; 
 	}	
@@ -50,7 +48,16 @@ public:
 		return logDst; 
 	}
 
+	bool logging(unsigned logLevel){
+		if(logLevel >= 1)
+			return true; 
+		else
+			return false; 
+	}
+
 private: 
+	unsigned logLevel;
+	FILE* logDst; 
 	uint32_t pc;
     uint32_t pcNext;
     uint32_t regs[32];
@@ -62,7 +69,7 @@ private:
 mips_error mips_cpu_set_debug_level(mips_cpu_h state, unsigned level, FILE *dest)
 {
     state->logLevel = level;
-    state->logDst = dest;
+    state -> get_file_handler() = dest;
     return mips_Success;
 }
 
@@ -134,8 +141,8 @@ uint32_t to_big(const uint8_t *pData)
 }
 
 void trans_high_low(string operand, string address, uint32_t dst, mips_cpu_h state){
-	if(state->logLevel >= 1)
-		fprintf (state -> logDst, "%u, %u.\n", operand, address)
+	if(state->logging)
+		fprintf (state -> get_file_handler(), "%u, %u.\n", operand, address)
 	switch(operand){
 		case "mthi": 
 			state->HI = state->regs[dst];
@@ -158,7 +165,7 @@ void trans_high_low(string operand, string address, uint32_t dst, mips_cpu_h sta
 }
 void pShift(string operand, mips_cpu_h state, string arg1, string arg2, string arg3){
 	if (state -> logLevel >= 1)
-		fprintf (state -> logDst, "%u %u, %u, %u.\n", operand, dst, src2, src1);
+		fprintf (state -> get_file_handler(), "%u %u, %u, %u.\n", operand, dst, src2, src1);
 	uint32_t val_to_shift, val_shift_by; 
 	if (state->get_register(src2, &val_to_shift) == mips_Success && state->get_register(src1, &val_shift_by)
 		state -> regs[dst] = val_to_shift >> (val_shift_by & 31);
@@ -171,7 +178,7 @@ mips_error decode_J_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		string operand;
 		uint32_t address = instruction & 0x3FFFFFF;
 		if (state -> logLevel >= 2)
-			fprintf (state -> logDst, "J - type: address = %u.\n  instr=%08x\n", address, instruction);
+			fprintf (state -> get_file_handler(), "J - type: address = %u.\n  instr=%08x\n", address, instruction);
 		
 		switch(opcode){
 			//This is J type
@@ -187,7 +194,7 @@ mips_error decode_J_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		}
 			
 		if(state->logLevel >= 1)
-			fprintf (state -> logDst, "%u, %u.\n", operand, address)
+			fprintf (state -> get_file_handler(), "%u, %u.\n", operand, address)
 		state->set_pc(state->get_pcNext);
 		state->set_pcNext((address << 2) | (state->get_pcNext) & 0xF00000);
 		return e; 
@@ -200,6 +207,8 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		uint32_t dst =  (instruction>> 11 ) & 0x1F;
 		uint32_t function = (instruction >> 0) & 0x3F;     
 		uint32_t shift = (instruction>> 6 ) & 0x1F ;
+		uint32_t address; 
+		uint32_t relative_address; 
 		uint64_t va, vb, vam, vbm, result;
 		e = state->get_register(src1, &va);
 		e = state->get_register(src2, &vb);
@@ -208,7 +217,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		if(opcode == 0x00){
         // This is R-type
 			if(state->logLevel >= 2){
-				fprintf(state->logDst, "R-Type : dst=%u, src1=%u, src2=%u, shift=%u, function=%u.\n  instr=%08x\n",
+				fprintf(state -> get_file_handler(), "R-Type : dst=%u, src1=%u, src2=%u, shift=%u, function=%u.\n  instr=%08x\n",
 					dst, src1, src2, shift, function, instruction
 				);
 			}
@@ -217,7 +226,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 			case 0x00:
 				operand = "sll"
 				if (state -> logLevel >= 1){
-					fprintf (state -> logDst, "sll %u, %u, %u.\n", dst, src2, shift);
+					fprintf (state -> get_file_handler(), "sll %u, %u, %u.\n", dst, src2, shift);
 				}  
 				e = state->get_register(src2, &result); 
 				if (e == mips_Success)
@@ -248,16 +257,16 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 				if(src2 | shift == 0){
 					if(state->logLevel >= 1){
 						if(dst == 31)
-							fprintf(state->logDst, "jalr %u .\n", src1);
+							fprintf(state->get_file_handler(), "jalr %u .\n", src1);
 						else
-							fprintf(state->logDst, "jalr %u, %u.\n", dst, src1);
+							fprintf(state->get_file_handler(), "jalr %u, %u.\n", dst, src1);
 					}
 					if(src1 == dst){
 						e = mips_ExceptionInvalidInstruction; 
 					}
 					else{
 						result = state->get_pcNext; 
-						addr_jump = state -> regs[src1];
+						e = state->get_register(src1, &addr_jump);
 					}
 				}
 				break; 
@@ -265,7 +274,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		case 0x08: 
 			if(src2 | dst | shift == 0){
 				if (state -> logLevel >= 1)
-					fprintf (state -> logDst, "jr %u.\n", src1);
+					fprintf (state -> get_file_handler(), "jr %u.\n", src1);
 				uint32_t reg; 
 				e = mips_cpu_get_register(state, src1, &reg);
 				if (reg % 4)
@@ -275,7 +284,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		
 		case 0x03: 
 			if (state -> logLevel >= 1)
-				fprintf (state -> logDst, "sra %u, %u, %u.\n", dst, src2, shift); 
+				fprintf (state -> get_file_handler(), "sra %u, %u, %u.\n", dst, src2, shift); 
 			uint32_t shift_val, sign;
 			e = state -> get_register(src2, &shift_val);
 			if(e == mips_Success){
@@ -289,7 +298,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		case 0x18: 
 			if(shift | dst == 0){
 				if(state->logLevel >= 1)
-					fprintf(state->logDst, "mult %u, %u, %u.\n", dst, src1, src2);
+					fprintf(state -> get_file_handler(), "mult %u, %u, %u.\n", dst, src1, src2);
 				if (state -> get_register(src1, &va) == mips_Success && state -> get_register(src2, &vb) == mips_Success){
 					result = va*vb;
 					state->set_HI(result >> 32);
@@ -300,7 +309,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		
 		case 0x07: 
 			if (state -> logLevel >= 1)
-				fprintf (state -> logDst, "srav %u, %u, %u.\n", dst, src2, src1);
+				fprintf (state -> get_file_handler(), "srav %u, %u, %u.\n", dst, src2, src1);
 			if(state->get_register(src2, &va) == mips_Success && state->get_register(src1, &shift_by) == mips_Success){
 				result = va >> (vb & 0x1F); 
 				if (vam)
@@ -319,7 +328,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		
 		case 0x02:
 			if (state -> logLevel >= 1)
-				fprintf (state -> logDst, "srl %u, %u, %u.\n", dst, src2, shift);
+				fprintf (state -> get_file_handler(), "srl %u, %u, %u.\n", dst, src2, shift);
 			e = state->get_register(state, src2, &result); 
 			if (e == mips_Success)
 				result = result >> shift; 
@@ -329,7 +338,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		case 0x20:
 			if(shift == 0){
 				if (state->logLevel >= 1)
-					fprintf(state->logDst, "add %u, %u, %u.\n", dst, src1, src2);
+					fprintf(state -> get_file_handler(), "add %u, %u, %u.\n", dst, src1, src2);
 				result = va+vb;
 				resm = result >> 31;    
 				if(vam == vbm && vam != resm)
@@ -347,7 +356,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		
 		case 0x2A: 
 			if (state -> logLevel >= 1)
-				fprintf(state->logDst, "slt %u, %u, %u.\n", dst, src1, src2);
+				fprintf(state -> get_file_handler(), "slt %u, %u, %u.\n", dst, src1, src2);
 			if (va < vb)
 				result = 1; 
 			else
@@ -356,7 +365,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		
 		case 0x2B: 
 			if (state -> logLevel >= 1)
-				fprintf(state->logDst, "slt %u, %u, %u.\n", dst, src1, src2);
+				fprintf(state -> get_file_handler(), "slt %u, %u, %u.\n", dst, src1, src2);
 			if (va < vb)
 				result = 1;
 			else
@@ -365,7 +374,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		
 		case 0x16:
 			if (state->logLevel >= 1)
-				fprintf(state->logDst, "sub %u, %u, %u.\n", dst, src1, src2);
+				fprintf(state -> get_file_handler(), "sub %u, %u, %u.\n", dst, src1, src2);
 			result = va - vb; 
 			if((vam != vbm) && (vbm == (result >> 31)))
 				e = mips_ExceptionArithmeticOverflow;
@@ -373,33 +382,33 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 			
 		case 0x17:
 			if (state->logLevel >= 1)
-				fprintf(state->logDst, "subu %u, %u, %u.\n", dst, src1, src2);
+				fprintf(state -> get_file_handler(), "subu %u, %u, %u.\n", dst, src1, src2);
 			result = va - vb; 
 			break; 
 		
 		case 0x1B: 
 			if (state->logLevel >= 1)
-				fprintf(state->logDst, "xor %u, %u, %u.\n", dst, src1, src2);
+				fprintf(state -> get_file_handler(), "xor %u, %u, %u.\n", dst, src1, src2);
             result = va ^ vb;
 			break;
 		
 		case 0x18:
 			if(shift == 0){
 				if (state->logLevel >= 1)
-					fprintf(state->logDst, "and %u, %u, %u.\n", dst, src1, src2);
+					fprintf(state -> get_file_handler(), "and %u, %u, %u.\n", dst, src1, src2);
 				result = va & vb;
 			}
 			break;
 		
 		case 0x19:
 			if (state->logLevel >= 1)
-				fprintf(state->logDst, "or %u, %u, %u.\n", dst, src1, src2);
+				fprintf(state -> get_file_handler(), "or %u, %u, %u.\n", dst, src1, src2);
             result = va | vb; 
 			break;
 		
 		case 0x2B:
 			if (state->logLevel >= 1)
-                fprintf(state->logDst, "stlu %u, %u, %u.\n", dst, src1, src2);
+                fprintf(state -> get_file_handler(), "stlu %u, %u, %u.\n", dst, src1, src2);
             if (va < vb)
 				result = 1;
 			else
@@ -409,7 +418,7 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
         case 0x21: 
 			if(shift == 0){ 
 				if(state->logLevel >= 1)
-					fprintf(state->logDst, "addu %u, %u, %u.\n", dst, src1, src2);
+					fprintf(state -> get_file_handler(), "addu %u, %u, %u.\n", dst, src1, src2);
 				result = va + vb;
 			}
 		break; 
@@ -422,13 +431,13 @@ mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 }
 
 mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t opcode){
-		uint32_t src1_i, dest_i, data_i; 
+		uint32_t src1_i, dest_i, data_i, address, relative_address, va, result; 
 		uint8_t data_from_mem[4];
 		src1_i = (instruction >> 21) & 0x1F;
 		dest_i = (instruction >> 16) & 0x1F; 
 		data_i = instruction & 0x0000FFFF;
 		if(state->logLevel >= 2){
-            fprintf(state->logDst, "I-Type : dst=%u, src1=%u, src2=%u, shift=%u,  instr=%08x\n",
+            fprintf(state -> get_file_handler(), "I-Type : dst=%u, src1=%u, src2=%u, shift=%u,  instr=%08x\n",
                 dest_i, src1_i, data_i, instruction
             );
         }
@@ -437,11 +446,10 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 			case 0x06: 
 			case 0x07: 
 			case 0x08: 
-				uint32_t get_val, res; 
-				res = data_i << 2;
-				if ((res >> 31) == 1)
-					res |= 0xFFFF0000;  
-				mips_error e = state->get_register(src1_i, &get_val);
+				result = data_i << 2;
+				if ((result >> 31) == 1)
+					result |= 0xFFFF0000;  
+				mips_error e = state->get_register(src1_i, &va);
 				break; 
 			default:; 
 		}
@@ -450,7 +458,7 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 			uint32_t data, res, x,get_val1, get_val2; 
 			case 0x06: 
 				if (state -> logLevel >= 1)
-					fprintf(state->logDst, "BLEZ %u, %u.\n", src1_i, data_i);
+					fprintf(state -> get_file_handler(), "BLEZ %u, %u.\n", src1_i, data_i);
 				if((get_val >> 31 == 1)|(get_val == 0)){
 					addr_jump = res; 
 					if((state -> pcNext >> 31) == 1 | (res % 4) != 0 )
@@ -461,7 +469,7 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 			case 0x07: 
 				if(dest_i == 0){
 					if(state->logLevel >= 1)
-						fprintf(state->logDst, "BGTZ %u, %u.\n", src1_i, data_i);
+						fprintf(state -> get_file_handler(), "BGTZ %u, %u.\n", src1_i, data_i);
 					if(get_val >> 31 == 0 && !get_val)
 						addr_jump = res;   
 					if(state -> pcNext >> 31 == 1 | res % 4 != 0)
@@ -477,15 +485,15 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 					mips_error e = state->set_register(dest_i, 0);
 				if(state -> logLevel >= 1){
 					if (opcode == 0x0A)
-							fprintf(state->logDst, "SLTI &u, %u.\n", dest_i, src1_i, data_i);
+							fprintf(state -> get_file_handler(), "SLTI &u, %u.\n", dest_i, src1_i, data_i);
 					else
-							fprintf(state->logDst, "SLTIU &u, %u.\n", dest_i, src1_i, data_i);
+							fprintf(state -> get_file_handler(), "SLTIU &u, %u.\n", dest_i, src1_i, data_i);
 				}
 				break;
 		
 			case 0x09:
 				if(state->logLevel >= 1)
-					fprintf(state->logDst, "addiu %u, %u, %u.\n", dest_i, src1_i, data_i);
+					fprintf(state -> get_file_handler(), "addiu %u, %u, %u.\n", dest_i, src1_i, data_i);
 				uint32_t va = state -> regs[src1_i];
 				uint32_t data = data_i; 
 				if (data_i >> 15 == 1) 
@@ -495,7 +503,7 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		
 			case 0x08:
                 if(state->logLevel >= 1)
-					fprintf(state->logDst, "addi %u, %u, %u.\n", dest_i, src1_i, data_i);
+					fprintf(state -> get_file_handler(), "addi %u, %u, %u.\n", dest_i, src1_i, data_i);
                 uint32_t data_m= data_i >> 15;
                 data = data_i;  
 				if (data_m == 1)data |= 0xFFFF0000;
@@ -507,13 +515,13 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		
 			case 0x0C:
 				if(state->logLevel >= 1)
-					fprintf(state->logDst, "andi %u, %u, %u.\n", dest_i, src1_i, data_i);
+					fprintf(state -> get_file_handler(), "andi %u, %u, %u.\n", dest_i, src1_i, data_i);
 				mips_error e = state->set_register(dest_i, va & data_i);
 				break;
 
 			case 0x0D:
 				if(state->logLevel >= 1)
-					fprintf(state->logDst, "ori %u, %u, %u.\n", dest_i, src1_i, data_i);
+					fprintf(state -> get_file_handler(), "ori %u, %u, %u.\n", dest_i, src1_i, data_i);
 				uint32_t args1; 
 				mips_error e1 = state->get_register(src1_i, &args1);
 				mips_error e = state->set_register(dest_i, args1 | data_i);  
@@ -521,14 +529,14 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 
 			case 0x0E:
 				if(state->logLevel >= 1)
-					fprintf(state->logDst, "xori %u, %u, %u.\n", dest_i, src1_i, data_i);
+					fprintf(state -> get_file_handler(), "xori %u, %u, %u.\n", dest_i, src1_i, data_i);
 				state -> regs[dest_i] = va ^ data_i; 
 				break;
 				
 			case 0x2B:
 				if(state -> logLevel >= 1)
-					fprintf(state -> logDst, "sw %u, offset(%u)", dest_i, src1_i);
-				uint32_t result, value;
+					fprintf(state -> get_file_handler(), "sw %u, offset(%u)", dest_i, src1_i);
+				uint32_t value;
 				mips_error e = mips_cpu_get_register(
 				state,	//!< Valid (non-empty) handle to a CPU
 				dest_i,		//!< Index from 0 to 31
@@ -558,27 +566,27 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 			case 0x0F:
 				if(src1_i == 0){
 					if(state->logLevel >= 1)
-						fprintf(state->logDst, "lui %u, %u, %u.\n", dest_i, data_i);
-					mips_error e = mips_cpu_set_register(state, dest_i, data_i << 16);
+						fprintf(state -> get_file_handler(), "lui %u, %u, %u.\n", dest_i, data_i);
+				 e = mips_cpu_set_register(state, dest_i, data_i << 16);
 				}
 				break; 
 				
 			
 			case 0x21:
 				if(state->logLevel >= 1)
-					fprintf(state->logDst, "lh %u, %u, %u.\n", dest_i, src1_i, data_i);
-				uint32_t data = data_i; 
+					fprintf(state -> get_file_handler(), "lh %u, %u, %u.\n", dest_i, src1_i, data_i);
+				uint32_t offset = data_i; 
 				uint16_t res;  
-				uint32_t val = state->regs[src1_i]; 
-				uint32_t address = val + data; 
-				uint32_t z = address - (address % 4);
+				e = state->get_register(src1_i, &va); 
+				address = va + offset; 
+				relative_address = address - (address % 4);
 				if (data_i >> 15)
 					data = 0xFFFF0000 | uint32_t(data_i);
 				if (address & 0x00000001 == 1){
 					return mips_ExceptionInvalidAddress; 
 				}
 				else{
-					mips_error e = mips_mem_read
+					e = mips_mem_read
 					(
 					state -> get_memory(),
 					z,
@@ -601,14 +609,13 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		
 			case 0x28:
 				if(state->logLevel >= 1)
-					fprintf(state->logDst, "sb %u, %u(%u).\n", dest_i, data_i, src1_i);
+					fprintf(state -> get_file_handler(), "sb %u, %u(%u).\n", dest_i, data_i, src1_i);
 				uint32_t var, var1;
 				e = state->get_register(src1_i, &var);
 				e = state->get_register(dest_i, & var1);
 				uint32_t total = data_i + var; 
 				uint32_t byte = total % 4;  
-				uint8_t valued[4];
-				valued[total % 4] = var1;
+				data_from_mem[total % 4] = var1;
 			    e = mips_mem_write(
 				state -> get_memory(),
 				total - byte, 
@@ -618,7 +625,7 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		
 			case 0x25:
 				if(state->logLevel >= 1)
-					fprintf(state->logDst, "lhu %u, %u, %u.\n", dest_i, src1_i, data_i);
+					fprintf(state -> get_file_handler(), "lhu %u, %u, %u.\n", dest_i, src1_i, data_i);
 				 data = data_i;  
 				if (data_i >> 15)
 					data = 0xFFFF0000 | data_i;
@@ -645,7 +652,7 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		
 			case 0x23:
 				if(state->logLevel >= 1)
-					fprintf(state->logDst, "lw %u, %u, %u.\n", dest_i, src1_i, data_i);      
+					fprintf(state -> get_file_handler(), "lw %u, %u, %u.\n", dest_i, src1_i, data_i);      
 				e =  mips_cpu_get_register(
 				state,	//!< Valid (non-empty) handle to a CPU
 				src1,		//!< Index from 0 to 31
@@ -664,7 +671,7 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		
 		case 0x29:
 			if(state -> logLevel >= 1)
-				fprintf(state->logDst, "sh %u, %u(%u).\n", dest_i, data_i, src1_i); 
+				fprintf(state -> get_file_handler(), "sh %u, %u(%u).\n", dest_i, data_i, src1_i); 
 			
 			uint32_t vAddr; 
 			e = state->get_register(src1_i, &vAddr);
@@ -690,7 +697,7 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 				
 		case 0x04:
 			if(state->logLevel >= 1)
-                fprintf(state->logDst, "beq %u, %u, %u.\n", dest_i, src1_i, data_i);
+                fprintf(state -> get_file_handler(), "beq %u, %u, %u.\n", dest_i, src1_i, data_i);
 			e = mips_cpu_get_register(state, dest_i, &get_val1);
 			e = mips_cpu_get_register(state, src1_i,&get_val2);  
 			if(get_val1 == get_val2){
@@ -710,41 +717,45 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 			res = shift_left; 
 			if(shift_left >> 15)
 				res |= 0xFFFF0000;
-			if (dest_i == 1){
-				if(state -> logLevel >= 1)
-					fprintf (state -> logDst, "BGEZ %u, %u.\n", src1_i, data_i);
-				if(shift_left >> 15 == 1 && getval >> 31 == 0)
-					addr_jump = 0xFFFF0000| shift_left;
-				else if((shift_left >> 15) & (getval >> 31) == 0)
-					addr_jump = shift_left;
+			switch(dest_i){
+				case 0x01: 
+					if(state -> logLevel >= 1)
+						fprintf (state -> get_file_handler(), "BGEZ %u, %u.\n", src1_i, data_i);
+					if(shift_left >> 15 == 1 && getval >> 31 == 0)
+						addr_jump = 0xFFFF0000| shift_left;
+					else if((shift_left >> 15) & (getval >> 31) == 0)
+						addr_jump = shift_left;
+					break;
+				
+				case 0x11: 
+					if(state -> logLevel >= 1)
+						fprintf (state -> get_file_handler(), "BGEZAL %u, %u.\n", src1_i, data_i);
+					e = state->set_register(31, state->get_pcNext() + 4); 
+					if (!getval >> 31)
+						addr_jump = res; 
+					break; 
+				
+				case 0x00: 
+					if(state -> logLevel >= 1)
+						fprintf (state -> get_file_handler(), "BLTZ %u, %u.\n", src1_i, data_i);
+					if (getval >> 31)
+						addr_jump = res; 
+					break;
+					
+				case 0x16: 
+					if(state->logLevel >= 1)	
+						fprintf(state -> get_file_handler(), "BLTZAL %u, %u.\n", src1_i, data_i);	
+					e = state->set_register(31, state->get_pcNext() + 4);
+					if (getval >> 31)
+						addr_jump = res; 
+					break; 
+				default:;	
 			}
-			
-			else if(dest_i == 17){
-				if(state -> logLevel >= 1)
-					fprintf (state -> logDst, "BGEZAL %u, %u.\n", src1_i, data_i);
-				e = state->set_register(31, state->get_pcNext() + 4); 
-				if (!getval >> 31)
-					addr_jump = res; 
-			}
-			else if (dest_i == 0){
-				if(state -> logLevel >= 1)
-					fprintf (state -> logDst, "BLTZ %u, %u.\n", src1_i, data_i);
-				if (getval >> 31)
-					addr_jump = res; 
-			}
-			
-			else if(dest_i == 16){
-				if(state -> logLevel >= 1)
-					fprintf (state -> logDst, "BLTZAL %u, %u.\n", src1_i, data_i);
-				e = state->set_register(31, state->get_pcNext() + 4);
-				if (getval >> 31)
-					addr_jump = res; 
-				}
-			break;
-		
+		break;
+					
 		case 0x05:
 			if(state->logLevel >= 1)
-                fprintf(state->logDst, "bne %u, %u, %u.\n", dest_i, src1_i, data_i);
+                fprintf(state -> get_file_handler(), "bne %u, %u, %u.\n", dest_i, src1_i, data_i);
 			e = mips_cpu_get_register(state, dest_i, &get_val1);
 			e = mips_cpu_get_register(state, src1_i,&get_val2);
 			if(get_val1 != get_val2){
@@ -759,7 +770,7 @@ mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t
 		
 			case 0x20: 
 				if(state->logLevel >= 1)
-					fprintf(state->logDst, "lb %u, %u, %u.\n", dest_i, src1_i, data_i);
+					fprintf(state -> get_file_handler(), "lb %u, %u, %u.\n", dest_i, src1_i, data_i);
 				e = mips_cpu_get_register(state, src1_i, &x ); 
 				res = (x + data_i) % 4;
 				data = data_i; 
@@ -804,7 +815,9 @@ mips_error mips_cpu_step(
 	mips_cpu_h state	//! Valid (non-empty) handle to a CPU
 )
 {
+	uint32_t instruction, opcode;
     uint8_t buffer[4];  
+    mips_error e;
     mips_error err=
 	mips_mem_read(
         state->mem,		//!< Handle to target memory
@@ -816,14 +829,14 @@ mips_error mips_cpu_step(
     if(!err)
         return err;
     
-	mips_error e = state->set_register(0, 0);
-    uint32_t instruction = to_big(buffer);
-    uint32_t opcode =  (instruction>>26) & 0x3F;
+	e = state -> set_register(0, 0);
+    instruction = to_big(buffer);
+    opcode =  (instruction>>26) & 0x3F;
 	if(opcode == 0x02 || opcode == 0x03)
-		e = decode_J_instruction(to_big(buffer), state, opcode);
+		e = decode_J_instruction(instruction, state, opcode);
 	else if(opcode == 0x00)
-		e = decode_R_instruction(to_big(buffer), state, opcode);
+		e = decode_R_instruction(instruction, state, opcode);
 	else
-		e = decode_I_instruction(to_big(buffer), state, opcode);
+		e = decode_I_instruction(instruction, state, opcode);
 	return e; 
 	}
