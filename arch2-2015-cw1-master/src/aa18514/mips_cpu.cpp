@@ -166,28 +166,9 @@ void pShift(string operand, mips_cpu_h state, string arg1, string arg2, string a
 		return;
 }
 
-mips_error mips_cpu_step(
-	mips_cpu_h state	//! Valid (non-empty) handle to a CPU
-)
-{
-    uint8_t buffer[4];  
-    mips_error err=
-	mips_mem_read(
-        state->mem,		//!< Handle to target memory
-        state->pc,	//!< Byte address to start transaction at
-        4,	//!< Number of bytes to transfer
-        buffer	//!< Receives the target bytes
-    );
-    
-    if(!err)
-        return err;
-    
-	mips_error e = state->set_register(0, 0);
-    uint32_t instruction = to_big(buffer);
-    uint32_t opcode =  (instruction>>26) & 0x3F;
-	uint8_t data_from_mem[4];
-	string operand; 
-	if(opcode == 0x02 || opcode == 0x03){
+mips_error decode_J_instruction(uint32_t instruction, mips_cpu_h state, uint32_t opcode){
+		mips_error e; 
+		string operand;
 		uint32_t address = instruction & 0x3FFFFFF;
 		if (state -> logLevel >= 2)
 			fprintf (state -> logDst, "J - type: address = %u.\n  instr=%08x\n", address, instruction);
@@ -210,9 +191,10 @@ mips_error mips_cpu_step(
 		state->set_pc(state->get_pcNext);
 		state->set_pcNext((address << 2) | (state->get_pcNext) & 0xF00000);
 		return e; 
-	}
-	else{
-		uint8_t addr_jump = 4; 
+}
+
+mips_error decode_R_instruction(uint32_t instruction, mips_cpu_h state, uint32_t opcode){
+	uint8_t addr_jump = 4; 
 		uint32_t src1 = (instruction>> 21) & 0x1F;
 		uint32_t src2 = (instruction>> 16) & 0x1F;   
 		uint32_t dst =  (instruction>> 11 ) & 0x1F;
@@ -436,11 +418,15 @@ mips_error mips_cpu_step(
 		if (e == mips_Success)
 			e = state->set_register(dst, result);
 		return e; 
-	 }
-	else{
-		uint32_t src1_i = (instruction >> 21) & 0x1F;
-		uint32_t dest_i = (instruction >> 16) & 0x1F; 
-		uint16_t data_i = instruction & 0xFFFF;
+
+}
+
+mips_error decode_I_instruction(uint32_t instruction, mips_cpu_h state, uint32_t opcode){
+		uint32_t src1_i, dest_i, data_i; 
+		uint8_t data_from_mem[4];
+		src1_i = (instruction >> 21) & 0x1F;
+		dest_i = (instruction >> 16) & 0x1F; 
+		data_i = instruction & 0x0000FFFF;
 		if(state->logLevel >= 2){
             fprintf(state->logDst, "I-Type : dst=%u, src1=%u, src2=%u, shift=%u,  instr=%08x\n",
                 dest_i, src1_i, data_i, instruction
@@ -812,6 +798,32 @@ mips_error mips_cpu_step(
 		state->set_pcNext((state->get_pcNext()) + addr_jump); 
 		return mips_Success; 
 	}
-		return mips_Success; 
-	}
+}
+
+mips_error mips_cpu_step(
+	mips_cpu_h state	//! Valid (non-empty) handle to a CPU
+)
+{
+    uint8_t buffer[4];  
+    mips_error err=
+	mips_mem_read(
+        state->mem,		//!< Handle to target memory
+        state->pc,	//!< Byte address to start transaction at
+        4,	//!< Number of bytes to transfer
+        buffer	//!< Receives the target bytes
+    );
+    
+    if(!err)
+        return err;
+    
+	mips_error e = state->set_register(0, 0);
+    uint32_t instruction = to_big(buffer);
+    uint32_t opcode =  (instruction>>26) & 0x3F;
+	if(opcode == 0x02 || opcode == 0x03)
+		e = decode_J_instruction(to_big(buffer), state, opcode);
+	else if(opcode == 0x00)
+		e = decode_R_instruction(to_big(buffer), state, opcode);
+	else
+		e = decode_I_instruction(to_big(buffer), state, opcode);
+	return e; 
 	}
