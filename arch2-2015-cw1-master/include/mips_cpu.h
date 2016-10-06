@@ -191,7 +191,7 @@ mips_error mips_cpu_step(
 	at the point that mips_cpu_set_debug_level is called with level>0,
 	such as the current PC and registers. Up to you.
 */
-mips_error mips_cpu_set_debug_level(mips_cpu_h state, unsigned level, FILE *dest);
+mips_error mips_cpu_set_debug_level(mips_cpu* state, unsigned level, FILE *dest);
 
 /*! Free all resources associated with state.
 
