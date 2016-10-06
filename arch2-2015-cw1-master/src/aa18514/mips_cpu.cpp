@@ -240,6 +240,7 @@
 					break; 
 				
 				case 0x10: 
+					// Sure you want to use bitwise or (|) here, rather than logical (||) ?
 					if (src1 | src2 | shift == 0)
 						trans_high_low("mfhi", address, dst, state); 
 					break;
@@ -323,15 +324,24 @@
 				}
 				break; 
 			
+			// The use of numeric constants is a bit fragile. Would read better and be more robust
+			// to use enumerated constants.
 			case 0x04: 
 				pShift("sllv", state, dst, src2, src1); 
 				break; 
 			
 			case 0x06:
+				// Sure this is not an error? Would pShift do both sllv and srlv?
 				pShift("srlv", state, dst, src2, src1); 
 				break;
 			
 			case 0x02:
+				// This pattern appears a lot throughout the code. It might make sense
+				// to replace it with a function of the form:
+				// void cpu_log(int level, mips_cpu *state, const char *str, ...);
+				// Internally it could use vfprintf.
+				// Would look cleaner, and allow you to change the functionality everywhere
+				// in just one function.
 				if (log_level > 0)
 					fprintf (state -> get_file_handler(), "srl %u, %u, %u.\n", dst, src2, shift);
 				e = state -> get_register(src2, &reg); 
@@ -362,6 +372,9 @@
 			case 0x2A: 
 				if (log_level > 0)
 					fprintf(state -> get_file_handler(), "slt %u, %u, %u.\n", dst, src1, src2);
+					
+				// Might be cleaner to say:
+				//  result = (va < vb) ? 1 : 0;
 				if (va < vb)
 					result = 1; 
 				else
