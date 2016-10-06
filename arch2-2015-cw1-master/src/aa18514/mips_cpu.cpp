@@ -2,7 +2,6 @@
 	#include <iostream>
 	#include <stdio.h>
 	#include <string>
-	using namespace std;
 
 	mips_cpu_h mips_cpu::mips_cpu_create(mips_mem_h mem)
 	{
@@ -79,7 +78,7 @@
     	for(int i=0;i<32;i++){
 	        e = this->set_register(i, 0);
 	    } 
-		return mips_Success; 
+		return e; 
 	}
 
 	FILE* mips_cpu::get_file_handler(){
@@ -123,7 +122,7 @@
 	        (((uint32_t)pData[3])<<0);
 	}
 
-	void load_byte(mips_cpu* state, string operand, uint32_t dest_register, uint32_t src_register, uint32_t data_i){ 
+	void load_byte(mips_cpu* state, std::string operand, uint32_t dest_register, uint32_t src_register, uint32_t data_i){ 
 		uint32_t reg_data,mem_data, offset;
 		uint8_t data_from_mem[4];
 		mips_error e;
@@ -145,7 +144,7 @@
 		e = state->set_register(dest_register, mem_data);
 	}
 
-	void trans_high_low(string operand, uint32_t address, uint32_t dst, mips_cpu* state){
+	void trans_high_low(std::string operand, uint32_t address, uint32_t dst, mips_cpu* state){
 		if(state->get_logLevel() > 0)
 			fprintf (state -> get_file_handler(), "%u, %u.\n", operand, address);
 		mips_error e;
@@ -166,7 +165,7 @@
 		}
 	}
 
-	void pShift(string operand, mips_cpu* state, uint32_t dst, uint32_t src2, uint32_t src1){
+	void pShift(std::string operand, mips_cpu* state, uint32_t dst, uint32_t src2, uint32_t src1){
 		mips_error e;
 		if (state->get_logLevel() > 0)
 			fprintf (state -> get_file_handler(), "%u %u, %u, %u.\n", operand, dst, src2, src1);
@@ -180,7 +179,7 @@
 	mips_error decode_J_instruction(uint32_t instruction, mips_cpu* state, uint32_t opcode){
 			unsigned log_level = state->get_logLevel();
 			mips_error e; 
-			string operand;
+			std::string operand;
 			uint32_t address = instruction & 0x3FFFFFF;
 			if (log_level >= 2)
 				fprintf (state -> get_file_handler(), "J - type: address = %u.\n  instr=%08x\n", address, instruction);
@@ -217,7 +216,7 @@
 			uint32_t address; 
 			uint32_t relative_address, reg, resm; 
 			uint64_t va, vb, vam, vbm, result;
-			string operand;
+			std::string operand;
 			e = state->get_register(src1, &va);
 			e = state->get_register(src2, &vb);
 			vam = va >> 31; 
@@ -435,10 +434,10 @@
 			uint32_t src_data, dest_data;
 			uint16_t shift_left, half_word;
 			uint8_t data_from_mem[4];
-			mips_error e = state->get_register(src_register, &src_data);
 			uint8_t memory_jump = 4; 
 			src_register = (instruction >> 21) & 0x1F;
 			dest_register = (instruction >> 16) & 0x1F; 
+			mips_error e = state->get_register(src_register, &src_data);
 			data_i = instruction & 0x0000FFFF;
 			if(log_level >= 2){
 	            fprintf(state -> get_file_handler(), "I-Type : dst=%u, src1=%u, src2=%u, shift=%u,  instr=%08x\n",
@@ -458,13 +457,13 @@
 			}
 			
 			switch(opcode){
-				uint32_t offset, total, byte, data_m, res, resm; 
+				uint32_t offset, total, byte, data_m, resm; 
 				case 0x06: 
 					if (log_level > 0)
 						fprintf(state -> get_file_handler(), "BLEZ %u, %u.\n", src_register, data_i);
 					if((src_data >> 31 == 1)|(src_data == 0)){
-						memory_jump = res; 
-						if(state -> get_pcNext() >> 31 == 1 | res % 4 != 0 )
+						memory_jump = result; 
+						if(state -> get_pcNext() >> 31 == 1 | result % 4 != 0 )
 							return mips_ExceptionInvalidAddress;
 					}	
 					break; 
@@ -474,8 +473,8 @@
 						if(log_level > 0)
 							fprintf(state -> get_file_handler(), "BGTZ %u, %u.\n", src_register, data_i);
 						if(src_data >> 31 == 0 && !src_data)
-							memory_jump = res;   
-						if(state -> get_pcNext() >> 31 == 1 | res % 4 != 0)
+							memory_jump = result;   
+						if(state -> get_pcNext() >> 31 == 1 | result % 4 != 0)
 							return mips_ExceptionInvalidAddress;
 						}
 					break;
@@ -509,12 +508,12 @@
 	                data_m= data_i >> 15;  
 					if (data_m)
 						data_i |= 0xFFFF0000;
-	                res = src_data + data_i;
-	                resm = res >> 31;
+	                result = src_data + data_i;
+	                resm = result >> 31;
 	                if ( ((src_data >> 31) == data_m) && ((src_data >> 31) != resm))
 	                	 return mips_ExceptionArithmeticOverflow;
 	                else 
-	                	e = state->set_register(dest_register, res); 
+	                	e = state->set_register(dest_register, result); 
 					break;
 			
 				case 0x0C:
@@ -584,15 +583,15 @@
 									data_from_mem
 									);
 						if (!data_from_mem){
-							res = ((uint16_t)data_from_mem[0] << 8)|
+							result = ((uint16_t)data_from_mem[0] << 8)|
 							      ((uint16_t)data_from_mem[1]<<0);
 						}	
 						else{
-							res = ((uint16_t)data_from_mem[2] << 8)|
+							result = ((uint16_t)data_from_mem[2] << 8)|
 								  ((uint16_t)data_from_mem[3]<<0);
 						} 
-						dest_data = res;
-						if (res >> 1 == 1) dest_data = (0xFFFF0000 | uint32_t(res)); 
+						dest_data = result;
+						if (result >> 1) dest_data = (0xFFFF0000 | uint32_t(result)); 
 						e = state->set_register(dest_register, dest_data);
 					}
 					break;
@@ -680,11 +679,11 @@
 				e = state->get_register(dest_register, &src_data);
 				e = state->get_register(src_register, &dest_data);  
 				if(src_data == dest_data){
-					res = data_i << 2;
-					if (res >> 31)
-						res = 0xFFFF0000 | uint32_t(res);
-					memory_jump =   res; 
-					if(state -> get_pcNext() >> 31 | res % 4 )
+					result = data_i << 2;
+					if (result >> 31)
+						result = 0xFFFF0000 | uint32_t(result);
+					memory_jump =   result; 
+					if(state -> get_pcNext() >> 31 | result % 4 )
 						return mips_ExceptionInvalidAddress;
 				}
 				break;
@@ -692,9 +691,9 @@
 			case 0x01: 
 				e = state->get_register(src_register, &src_data);
 				shift_left = data_i << 2; 
-				res = shift_left; 
+				result = shift_left; 
 				if(shift_left >> 15)
-					res |= 0xFFFF0000; 
+					result |= 0xFFFF0000; 
 				switch(dest_register){
 					case 0x01: 
 						if(log_level > 0)
@@ -710,14 +709,14 @@
 							fprintf (state -> get_file_handler(), "BGEZAL %u, %u.\n", src_register, data_i);
 						e = state->set_register(31, state->get_pcNext() + 4); 
 						if (!src_data >> 31)
-							memory_jump = res; 
+							memory_jump = result; 
 						break; 
 					
 					case 0x00: 
 						if(log_level > 0)
 							fprintf (state -> get_file_handler(), "BLTZ %u, %u.\n", src_register, data_i);
 						if (src_data >> 31)
-							memory_jump = res; 
+							memory_jump = result; 
 						break;
 						
 					case 0x16: 
@@ -725,7 +724,7 @@
 							fprintf(state -> get_file_handler(), "BLTZAL %u, %u.\n", src_register, data_i);	
 						e = state->set_register(31, state->get_pcNext() + 4);
 						if (src_data >> 31)
-							memory_jump = res; 
+							memory_jump = result; 
 						break; 
 					default:;	
 				}
@@ -739,10 +738,10 @@
 				if(src_data != dest_data){
 					uint16_t shift_left = data_i << 2;
 					if (shift_left >> 15 == 1)
-						res = 0xFFFF0000 | uint32_t(shift_left);
+						result = 0xFFFF0000 | uint32_t(shift_left);
 					else
-						res = uint32_t(shift_left);
-					memory_jump =  res; 
+						result = uint32_t(shift_left);
+					memory_jump =  result; 
 				}
 				break;
 
