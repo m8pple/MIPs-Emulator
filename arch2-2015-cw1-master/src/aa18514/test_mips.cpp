@@ -7,7 +7,8 @@ int main()
 	FILE *fp;
 	fp = fopen("test.txt", "w");
     mips_mem_h mem=mips_mem_create_ram(4096, 4);
-    mips_cpu_h cpu=mips_cpu_create(mem);
+    mips_cpu cpu; 
+    cpu -> mips_cpu_create(mem);
     mips_error e=mips_cpu_set_debug_level(cpu, 4, fp);
     
 	if(e!=mips_Success){
@@ -328,7 +329,7 @@ e = cpu->set_register(8, 0x80000000);
     
     // 2 - put register values in cpu
     e= cpu->set_register( 19, 28); 
-    sw(mem,  instr, 28, fp); 
+    sw (mem, cpu,  instr, 28, fp); 
 	 
 	 uint32_t res = 0xA4218926;
 	 uint8_t buffer[4]; 
@@ -457,7 +458,7 @@ e = cpu->set_register(8, 0x80000000);
    e = cpu->set_register( 9, -4);
    e = cpu->set_register( 10, -4);
    uint32_t x; 
-   e = mips_cpu_get_pc(cpu, &x); 
+   e = cpu->get_pc()(cpu, &x); 
    bne(mem, cpu, instr, x + 8, fp);
  
    instr = 
@@ -468,7 +469,7 @@ e = cpu->set_register(8, 0x80000000);
         (8ul << 16) // srcb = r5
         |
         (2ul << 0); // shift = 0
-   e = mips_cpu_get_pc(cpu, &x);
+   e = cpu->get_pc()(cpu, &x);
    e = cpu->set_register( 6, 1);
    e = cpu->set_register( 8, 1);
    bne(mem, cpu, instr, x + 8, fp);
@@ -667,7 +668,7 @@ instr =
 	SRL(mem, cpu, instr, 15, fp);
 	uint8_t recg[4]; recg[0] = 0; recg[1] = 0; recg[2] = 0; recg[3] = 0; 
 	uint32_t pc1;
-	e = mips_cpu_get_pc(cpu, &pc1);
+	e = cpu->get_pc()(1);
 	e = mips_mem_write(
 		mem,
 		pc1 + 4,
@@ -744,7 +745,7 @@ instr =
 	J(mem, cpu, instr, 0x00000030, fp);
 
 	
-//	e = mips_cpu_get_pc(cpu, &pc1);
+//	e = cpu->get_pc()(1);
 //	e = mips_mem_write(
 //		mem,
 //		pc1 + 4,
@@ -771,9 +772,9 @@ instr =
 
 	}
 
-void slt(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE *fp){   
+void slt(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE *fp){   
 	uint32_t pc; 
-	mips_error e = mips_cpu_get_pc(cpu, &pc);
+	mips_error e = cpu->get_pc()();
 	int testId = mips_test_begin_test("slt");
 	uint8_t buffer[4]; 
     buffer[0]=(instr>>24)&0xFF;
@@ -800,15 +801,15 @@ if(e!=mips_Success){
     // 4 -Check the result
 	uint32_t got;
 	uint32_t address = ((instr >> 11) & 0x1F);
-	e=mips_cpu_get_register(cpu, address, &got); 
+	e=cpu->get_register( address, &got); 
 	int passed = got == val;
 	 mips_test_end_test(testId, passed, "r0 <> 0");
 }
 
-void addi(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+void addi(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	int testId = mips_test_begin_test("addi");
 	uint32_t pc; 
-	mips_error e = mips_cpu_get_pc(cpu, &pc); 
+	mips_error e = cpu->get_pc()(); 
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -842,16 +843,16 @@ void addi(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp)
     uint32_t got;
     // 4 -Check the result
 	uint32_t address = ((instr >> 16) & 0x1F);
-    e=mips_cpu_get_register(cpu, address, &got);
+    e=cpu->get_register(cpu, address, &got);
      passed = got == val;
     }
     mips_test_end_test(testId, passed, "50 + 50 != 90");
 }
 
-void beq(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+void beq(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	 uint32_t pc; 
 	 int testId = mips_test_begin_test("beq"); 
-	 mips_error e = mips_cpu_get_pc(cpu, &pc); 
+	 mips_error e = cpu->get_pc()(); 
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -881,9 +882,9 @@ void beq(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint32_t reg1; 
 	uint32_t reg2;
 	address = (instr >> 21) & 0x1F;
-	 e = mips_cpu_get_register(cpu, address, &reg1);
+	 e = cpu->get_register(cpu, address, &reg1);
 	address1 = (instr >> 16) & 0x1F; 
-	e = mips_cpu_get_register(cpu, address1, &reg2);
+	e = cpu->get_register(cpu, address1, &reg2);
 	uint16_t val2 = ((instr >> 0) & 0xFFFF);
 	uint16_t shift = val2 << 2;
 	
@@ -905,10 +906,10 @@ void beq(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
      mips_test_end_test(testId, passed, "50 + 50 != 90");
 }
 
-void lw(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+void lw(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint32_t pc; 
 	int testId = mips_test_begin_test("lw");
-	 mips_error e = mips_cpu_get_pc(cpu, &pc);	 
+	 mips_error e = cpu->get_pc()();	 
     uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -934,17 +935,17 @@ void lw(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
     } 
 	uint32_t got;
 	uint32_t address = ((instr >> 16) & 0x1F);
-	 e=mips_cpu_get_register(cpu, address, &got);
+	 e=cpu->get_register(cpu, address, &got);
 	 
 	int passed = got == val;
     
     mips_test_end_test(testId, passed, "50 + 50 != 90");
 }
 
-void OR(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+void OR(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint32_t pc; 
 	int testId = mips_test_begin_test("or");
-	mips_error e = mips_cpu_get_pc(cpu, &pc);
+	mips_error e = cpu->get_pc()();
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -970,14 +971,14 @@ void OR(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
     } 
 	uint32_t address = ((instr >> 11) & 0x1F);
 	uint32_t got;
-	e=mips_cpu_get_register(cpu, address, &got);
+	e=cpu->get_register(cpu, address, &got);
 	 int passed = got == val;
 	  mips_test_end_test(testId, passed, "50 + 50 != 90");
 }
-void addu(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+void addu(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint32_t pc; 
 	int testId = mips_test_begin_test("addu");
-	mips_error e = mips_cpu_get_pc(cpu, &pc);
+	mips_error e = cpu->get_pc();
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1003,14 +1004,14 @@ void addu(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp)
     } 
 	uint32_t address = ((instr >> 11) & 0x1F);
 	uint32_t got;
-	e=mips_cpu_get_register(cpu, address, &got); 
+	e=cpu->get_register(cpu, address, &got); 
 	int passed = got == val;
 	mips_test_end_test(testId, passed, "50 + 50 != 90");
 }  
-  void add(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+  void add(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint32_t pc; 
 	int testId = mips_test_begin_test("add");
-	mips_error e = mips_cpu_get_pc(cpu, &pc);
+	mips_error e = cpu->get_pc();
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1043,16 +1044,16 @@ void addu(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp)
 	if (e == mips_Success){
 		uint32_t address = ((instr >> 11) & 0x1F);
 		uint32_t got;
-		e=mips_cpu_get_register(cpu, address, &got); 
+		e=cpu->get_register(cpu, address, &got); 
 		passed = got == val;
 	}
 	mips_test_end_test(testId, passed, "50 + 50 != 90");
 } 
 
-void addiu(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+void addiu(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint32_t pc; 
 	int testId = mips_test_begin_test("addiu");
-	mips_error e = mips_cpu_get_pc(cpu, &pc);
+	mips_error e = cpu->get_pc();
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1078,15 +1079,15 @@ void addiu(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp
     } 
 	uint32_t address = ((instr >> 16) & 0x1F);
 	uint32_t got;
-	e=mips_cpu_get_register(cpu, address, &got); 
+	e=cpu->get_register(cpu, address, &got); 
 	int passed = got == val;
 	mips_test_end_test(testId, passed, "50 + 50 != 90");
 }    
 
-void XOR(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+void XOR(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint32_t pc; 
 	int testId = mips_test_begin_test("xor");
-	mips_error e = mips_cpu_get_pc(cpu, &pc);
+	mips_error e = cpu->get_pc();
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1112,15 +1113,15 @@ void XOR(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
     } 
 	uint32_t address = ((instr >> 11) & 0x1F);
 	uint32_t got;
-	e=mips_cpu_get_register(cpu, address, &got); 
+	e=cpu->get_register(cpu, address, &got); 
 	int passed = got == val;
 	mips_test_end_test(testId, passed, "50 + 50 != 90");
 }
 
-void AND(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+void AND(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint32_t pc; 
 	int testId = mips_test_begin_test("and");
-	mips_error e = mips_cpu_get_pc(cpu, &pc);
+	mips_error e = cpu->get_pc();
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1146,17 +1147,17 @@ void AND(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
     } 
 	uint32_t address = ((instr >> 11) & 0x1F);
 	uint32_t got;
-	e=mips_cpu_get_register(cpu, address, &got); 
+	e=cpu->get_register(cpu, address, &got); 
 	int passed = got == val;
 	mips_test_end_test(testId, passed, "50 + 50 != 90");
 }
 
 
 
-void subu(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+void subu(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint32_t pc; 
 	int testId = mips_test_begin_test("subu");
-	mips_error e = mips_cpu_get_pc(cpu, &pc);
+	mips_error e = cpu->get_pc();
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1182,15 +1183,15 @@ void subu(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp)
     } 
 	uint32_t address = ((instr >> 11) & 0x1F);
 	uint32_t got;
-	e=mips_cpu_get_register(cpu, address, &got); 
+	e=cpu->get_register( address, &got); 
 	int passed = got == val;
 	mips_test_end_test(testId, passed, "50 + 50 != 90");
 }
 
-void sllv(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+void sllv(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint32_t pc; 
 	int testId = mips_test_begin_test("sllv");
-	mips_error e = mips_cpu_get_pc(cpu, &pc);
+	mips_error e = cpu->get_pc();
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1216,15 +1217,15 @@ void sllv(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp)
     } 
 	uint32_t address = ((instr >> 11) & 0x1F);
 	uint32_t got;
-	e=mips_cpu_get_register(cpu, address, &got); 
+	e=cpu->get_register(address, &got); 
 	int passed = got == val;
 	mips_test_end_test(testId, passed, "50 + 50 != 90");
 }
 
-void sw(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+void sw(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint32_t pc; 
 	int testId = mips_test_begin_test("sw");
-	mips_error e = mips_cpu_get_pc(cpu, &pc);
+	mips_error e = cpu->get_pc()();
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1251,7 +1252,7 @@ void sw(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint8_t m[4];
 	uint32_t a = ((instr >> 21) & 0x1F);
 	uint32_t x;
-	 e = mips_cpu_get_register(cpu, a, &x);
+	 e = cpu->get_register( a, &x);
 	uint32_t dat = ((instr >> 0) &0xFFFF); 
 	uint32_t effective_address = x + dat; 
 	e=mips_mem_read(mem, effective_address, 4, m);
@@ -1266,10 +1267,10 @@ void sw(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
 	mips_test_end_test(testId, passed, "50 + 50 != 90");
 	}
 	
-	void XORI(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+	void XORI(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	int testId = mips_test_begin_test("xori");
 	uint32_t pc; 
-	mips_error e = mips_cpu_get_pc(cpu, &pc); 
+	mips_error e = cpu->get_pc(); 
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1297,16 +1298,16 @@ void sw(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
     uint32_t got;
     // 4 -Check the result
 	uint32_t address = ((instr >> 16) & 0x1F);
-    e=mips_cpu_get_register(cpu, address, &got);
+    e=cpu->get_register( address, &got);
     int passed = got == val;
     
     mips_test_end_test(testId, passed, "50 + 50 != 90");
 	}
 	
-	void LB(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+	void LB(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	int testId = mips_test_begin_test("lb");
 	uint32_t pc; 
-	mips_error e = mips_cpu_get_pc(cpu, &pc); 
+	mips_error e = cpu->get_pc(); 
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1334,16 +1335,16 @@ void sw(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
     uint32_t got;
     // 4 -Check the result
 	uint32_t address = ((instr >> 16) & 0x1F);
-    e=mips_cpu_get_register(cpu, address, &got);
+    e=cpu->get_register( address, &got);
     int passed = got == val;
     
     mips_test_end_test(testId, passed, "50 + 50 != 90");
 	}
 	
-	void SB(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+	void SB(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	int testId = mips_test_begin_test("sb");
 	uint32_t pc; 
-	mips_error e = mips_cpu_get_pc(cpu, &pc); 
+	mips_error e = cpu->get_pc(); 
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1376,7 +1377,7 @@ void sw(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
 		dat = uint32_t(src2);
 	}
 	uint32_t got;
-	e = mips_cpu_get_register(cpu, src1, &got);
+	e = cpu->get_register( src1, &got);
 	uint32_t y = dat + got;
 	uint32_t mod = y % 4;
 	uint32_t addr = y - mod; 
@@ -1392,10 +1393,10 @@ void sw(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
     mips_test_end_test(testId, passed, "50 + 50 != 90");
 	}
 	
-	void sub(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+	void sub(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint32_t pc; 
 	int testId = mips_test_begin_test("sub");
-	mips_error e = mips_cpu_get_pc(cpu, &pc);
+	mips_error e = cpu->get_pc();
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1427,16 +1428,16 @@ void sw(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
 	if (e == mips_Success){
 		uint32_t address = ((instr >> 11) & 0x1F);
 		uint32_t got;
-		e=mips_cpu_get_register(cpu, address, &got); 
+		e=cpu->get_register(address, &got); 
 		passed = got == val;
 	}
 	mips_test_end_test(testId, passed, "50 + 50 != 90");
 	}
 	
-	void bne(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+	void bne(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint32_t pc; 
 	int testId = mips_test_begin_test("bne"); 
-	mips_error e = mips_cpu_get_pc(cpu, &pc); 
+	mips_error e = cpu->get_pc(); 
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1472,9 +1473,9 @@ void sw(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
 	uint32_t reg1; 
 	uint32_t reg2;
 	address = (instr >> 21) & 0x1F;
-	 e = mips_cpu_get_register(cpu, address, &reg1);
+	 e = cpu->get_register(address, &reg1);
 	address = (instr >> 16) & 0x1F;
-	e = mips_cpu_get_register(cpu, address, & reg2);
+	e = cpu->get_register( address, & reg2);
 	uint16_t val2 = ((instr >> 0) & 0xFFFF);
 	uint16_t shift = val2 << 2;
 	
@@ -1496,10 +1497,10 @@ void sw(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
      mips_test_end_test(testId, passed, "50 + 50 != 90");
 	}
 	
-	void lh(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+	void lh(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 			int testId = mips_test_begin_test("lh");
 	uint32_t pc; 
-	mips_error e = mips_cpu_get_pc(cpu, &pc); 
+	mips_error e = cpu->get_pc(); 
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1527,15 +1528,15 @@ void sw(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
     uint32_t got;
     // 4 -Check the result
 	uint32_t address = ((instr >> 16) & 0x1F);
-    e=mips_cpu_get_register(cpu, address, &got);
+    e=cpu->get_register( address, &got);
     int passed = got == val;
 	mips_test_end_test(testId, passed, "50 + 50 != 90");
 	}
 	
-	void LBU(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+	void LBU(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 		int testId = mips_test_begin_test("lbu");
 	uint32_t pc; 
-	mips_error e = mips_cpu_get_pc(cpu, &pc); 
+	mips_error e = cpu->get_pc(); 
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
@@ -1563,14 +1564,14 @@ void sw(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
     uint32_t got;
     // 4 -Check the result
 	uint32_t address = ((instr >> 16) & 0x1F);
-    e=mips_cpu_get_register(cpu, address, &got);
+    e=cpu->get_register( address, &got);
 	int passed = got == val;
     mips_test_end_test(testId, passed, "50 + 50 != 90");
 	}
 	
-	void SLTU(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+	void SLTU(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 		uint32_t pc; 
-	mips_error e = mips_cpu_get_pc(cpu, &pc);
+	mips_error e = cpu->get_pc()();
 	int testId = mips_test_begin_test("sltu");
 	uint8_t buffer[4]; 
     buffer[0]=(instr>>24)&0xFF;
@@ -1597,14 +1598,14 @@ if(e!=mips_Success){
     // 4 -Check the result
 	uint32_t got;
 	uint32_t address = ((instr >> 11) & 0x1F);
-	e=mips_cpu_get_register(cpu, address, &got); 
+	e=cpu->get_register(address, &got); 
 	int passed = got == val;
 	 mips_test_end_test(testId, passed, "r0 <> 0");
 	}
 	
-void SRA(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+void SRA(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 		uint32_t pc; 
-	mips_error e = mips_cpu_get_pc(cpu, &pc);
+	mips_error e = cpu->get_pc();
 	int testId = mips_test_begin_test("sra");
 	uint8_t buffer[4]; 
     buffer[0]=(instr>>24)&0xFF;
@@ -1631,21 +1632,20 @@ if(e!=mips_Success){
     // 4 -Check the result
 	uint32_t got;
 	uint32_t address = ((instr >> 11) & 0x1F);
-	e=mips_cpu_get_register(cpu, address, &got); 
+	e=cpu->get_register(address, &got); 
 	int passed = got == val;
 	 mips_test_end_test(testId, passed, "r0 <> 0");
 	}
 	
-void SRAV(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
-		uint32_t pc; 
-	mips_error e = mips_cpu_get_pc(cpu, &pc);
+void SRAV(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){ 
+	pc = cpu->get_pc();
 	int testId = mips_test_begin_test("srav");
 	uint8_t buffer[4]; 
     buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
     buffer[2]=(instr>>8)&0xFF;
     buffer[3]=(instr>>0)&0xFF;
-  e=mips_mem_write(
+  mips_error e=mips_mem_write(
      mem,	        //!< Handle to target memory
      pc,	            //!< Byte address to start transaction at
      4,	            //!< Number of bytes to transfer
@@ -1665,21 +1665,20 @@ if(e!=mips_Success){
     // 4 -Check the result
 	uint32_t got;
 	uint32_t address = ((instr >> 11) & 0x1F);
-	e=mips_cpu_get_register(cpu, address, &got); 
+	e=cpu->get_register(address, &got); 
 	int passed = got == val;
 	 mips_test_end_test(testId, passed, "r0 <> 0");
 	}
 	
-	void SRL(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
-		uint32_t pc; 
-		mips_error e = mips_cpu_get_pc(cpu, &pc);
+	void SRL(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
+		uint32_t pc = cpu->get_pc();
 		int testId = mips_test_begin_test("srl");
 		uint8_t buffer[4]; 
 		buffer[0]=(instr>>24)&0xFF;
 		buffer[1]=(instr>>16)&0xFF;
 		buffer[2]=(instr>>8)&0xFF;
 		buffer[3]=(instr>>0)&0xFF;
-	e=mips_mem_write(
+	mips_error e=mips_mem_write(
 		mem,	        //!< Handle to target memory
 		pc,	            //!< Byte address to start transaction at
 		4,	            //!< Number of bytes to transfer
@@ -1698,21 +1697,20 @@ if(e!=mips_Success){
     // 4 -Check the result
 	uint32_t address = ((instr >> 11) & 0x1F);
 	uint32_t got;
-	e=mips_cpu_get_register(cpu, address, &got); 
+	e=cpu->get_register(address, &got); 
 	int passed = got == val;
 	 mips_test_end_test(testId, passed, "r0 <> 0");
 	}
 	
-	void J(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
-		uint32_t pc; 
-		mips_error e = mips_cpu_get_pc(cpu, &pc); 
+	void J(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){ 
+		uint32_t pc = cpu->get_pc(); 
 		int testId = mips_test_begin_test("j");
 		uint8_t buffer[4]; 
 		buffer[0]=(instr>>24)&0xFF;
 		buffer[1]=(instr>>16)&0xFF;
 		buffer[2]=(instr>>8)&0xFF;
 		buffer[3]=(instr>>0)&0xFF;
-	e=mips_mem_write(
+	mips_error e=mips_mem_write(
 		mem,	        //!< Handle to target memory
 		pc,	            //!< Byte address to start transaction at
 		4,	            //!< Number of bytes to transfer
@@ -1729,16 +1727,16 @@ if(e!=mips_Success){
 			fprintf(fp, "mips_cpu_step : failed.\n");
 			exit(1);
 	}
-	e = mips_cpu_get_pc(cpu,&pc);
+	pc = cpu->get_pc();
     // 4 -Check the result  
 	int passed = pc == val;
 	 mips_test_end_test(testId, passed, "r0 <> 0");
 	}
 	
-void JALR(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+void JALR(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 		uint32_t pc;  
 		int testId = mips_test_begin_test("jalr");
-			mips_error e = mips_cpu_get_pc(cpu, &pc);
+			pc = cpu->get_pc();
 		
 		uint32_t imp = pc + 4; 
 		uint8_t buffer[4]; 
@@ -1746,7 +1744,7 @@ void JALR(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp)
 		buffer[1]=(instr>>16)&0xFF;
 		buffer[2]=(instr>>8)&0xFF;
 		buffer[3]=(instr>>0)&0xFF;
-	 e=mips_mem_write(
+	 mips_error e=mips_mem_write(
 		mem,	        //!< Handle to target memory
 		pc,	            //!< Byte address to start transaction at
 		4,	            //!< Number of bytes to transfer
@@ -1763,14 +1761,14 @@ if(e!=mips_Success){
 			fprintf(fp, "mips_cpu_step : failed.\n");
 			exit(1);
 	}
-	e = mips_cpu_get_pc(cpu, &pc);
+    pc = cpu->get_pc();
     // 4 -Check the result  
 		uint32_t rd = ((instr>> 11 ) & 0x1F);
 		int passed;
 		uint32_t get_reg; 
-		e = mips_cpu_get_register(cpu, rd, &get_reg);
+		e = cpu->get_register( rd, &get_reg);
 		uint32_t pc1;
-		e = mips_cpu_get_pc(cpu, &pc1);
+		pc1 = cpu->get_pc();
 		 
 	if((pc1 == val) && (get_reg == imp)){
 		passed = 1;
@@ -1781,16 +1779,16 @@ if(e!=mips_Success){
 	 mips_test_end_test(testId, passed, "r0 <> 0");
 	}
 	
-	void bgtz(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+	void bgtz(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 		 uint32_t pc; 
 	 int testId = mips_test_begin_test("bgtz"); 
-	 mips_error e = mips_cpu_get_pc(cpu, &pc); 
+	pc = cpu->get_pc(); 
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
     buffer[2]=(instr>>8)&0xFF;
     buffer[3]=(instr>>0)&0xFF;
-		e=mips_mem_write(
+		mips_error e=mips_mem_write(
 			mem,	        //!< Handle to target memory
 			pc,	            //!< Byte address to start transaction at
 			4,	            //!< Number of bytes to transfer
@@ -1820,7 +1818,7 @@ if(e!=mips_Success){
 	uint32_t address;
 	uint32_t reg1; 
 	address = (instr >> 21) & 0x1F; 
-	 e = mips_cpu_get_register(cpu, address, &reg1); 
+	 e = cpu->get_register(address, &reg1); 
 	uint16_t val2 = ((instr >> 0) & 0xFFFF);
 	uint16_t shift = val2 << 2;
 	
@@ -1842,16 +1840,16 @@ if(e!=mips_Success){
      mips_test_end_test(testId, passed, "50 + 50 != 90");
 	}
 	
-	void bltz(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+	void bltz(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 		uint32_t pc; 
 	 int testId = mips_test_begin_test("bltz"); 
-	 mips_error e = mips_cpu_get_pc(cpu, &pc); 
+	 pc = cpu->get_pc(); 
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
     buffer[2]=(instr>>8)&0xFF;
     buffer[3]=(instr>>0)&0xFF;
-		e=mips_mem_write(
+		mips_error e=mips_mem_write(
 			mem,	        //!< Handle to target memory
 			pc,	            //!< Byte address to start transaction at
 			4,	            //!< Number of bytes to transfer
@@ -1880,7 +1878,7 @@ if(e!=mips_Success){
 	uint32_t address;
 	uint32_t reg1; 
 	address = (instr >> 21) & 0x1F; 
-	 e = mips_cpu_get_register(cpu, address, &reg1); 
+	 e = cpu->get_register(address, &reg1); 
 	uint16_t val2 = ((instr >> 0) & 0xFFFF);
 	uint16_t shift = val2 << 2;
 	
@@ -1902,22 +1900,22 @@ if(e!=mips_Success){
      mips_test_end_test(testId, passed, "50 + 50 != 90");
 	}
 	
-	void lui(mips_mem_h mem, mips_cpu_h cpu, uint32_t instr, uint32_t val, FILE*fp){
+	void lui(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val, FILE*fp){
 	int testId = mips_test_begin_test("lui");
 	uint32_t pc; 
-	mips_error e = mips_cpu_get_pc(cpu, &pc); 
+	pc = cpu->get_pc(); 
 	uint8_t buffer[4];
 	buffer[0]=(instr>>24)&0xFF;
     buffer[1]=(instr>>16)&0xFF;
     buffer[2]=(instr>>8)&0xFF;
     buffer[3]=(instr>>0)&0xFF;
     
-		e=mips_mem_write(
-			mem,	        //!< Handle to target memory
-			pc,	         //!< Byte address to start transaction at
-			4,	            //!< Number of bytes to transfer
-			buffer	        //!< Receives the target bytes
-		);
+	mips_error e=mips_mem_write(
+		mem,	        //!< Handle to target memory
+		pc,	         //!< Byte address to start transaction at
+		4,	            //!< Number of bytes to transfer
+		buffer	        //!< Receives the target bytes
+	);
 	 
     if(e!=mips_Success){
 		fprintf(stderr, "mips_mem_write : failed.\n");
@@ -1934,7 +1932,7 @@ if(e!=mips_Success){
     uint32_t got;
     // 4 -Check the result
 	uint32_t address = ((instr >> 16) & 0x1F);
-    e=mips_cpu_get_register(cpu, address, &got);
+    e = cpu -> get_register(address, &got);
      passed = got == val;
     mips_test_end_test(testId, passed, "50 + 50 != 90");	
 	}

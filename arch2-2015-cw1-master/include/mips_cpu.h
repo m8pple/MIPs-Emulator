@@ -49,33 +49,39 @@ mips_cpu_h mips_cpu_create(mips_mem_h mem);
 	However, it should not modify RAM. Imagine this as asserting the reset
 	input of the CPU core.
 */
-mips_error mips_cpu_reset(mips_cpu_h state);
-
-/*! Returns the current value of one of the 32 general purpose MIPS registers */
-mips_error mips_cpu_get_register(
-	mips_cpu_h state,	//!< Valid (non-empty) handle to a CPU
-	unsigned index,		//!< Index from 0 to 31
-	uint32_t *value		//!< Where to write the value to
-);
-
-/*! Modifies one of the 32 general purpose MIPS registers. */
-mips_error mips_cpu_set_register(
-	mips_cpu_h state,	//!< Valid (non-empty) handle to a CPU
-	unsigned index,		//!< Index from 0 to 31
-	uint32_t value		//!< New value to write into register file
-);
-
-/*! Sets the program counter for the next instruction to the specified byte address.
-
-	While this sets the value of the PC, it should not cause any kind of
-	execution to happen. Once you look at branches in detail, you will
-	see that there is some slight ambiguity about this function. Choose the
-	only option that makes sense.
-*/
-mips_error mips_cpu_set_pc(
-	mips_cpu_h state,	//!< Valid (non-empty) handle to a CPU
-	uint32_t pc			//!< Address of the next instruction to exectute.
-);
+class mips_cpu
+	{
+	public:  
+		mips_cpu_h mips_cpu_create(mips_mem_h mem);
+		void set_pc(uint32_t val);
+		void set_pcNext(uint32_t val);
+		uint32_t get_pc();
+		uint32_t get_pcNext();
+		void set_memory(mips_mem_h *memory);
+		mips_mem_h get_memory();
+		mips_error get_register(unsigned index, uint32_t* value);
+		mips_error get_register(unsigned index, uint64_t* value);
+		mips_error get_register(unsigned index, uint8_t* value);
+		mips_error set_register(unsigned index, uint32_t value);
+		void set_HI_register(uint32_t value);
+		void set_LO_register(uint32_t value);
+		uint32_t get_LO_register();
+		uint32_t get_HI_register();
+		mips_error reset();
+		FILE* get_file_handler();
+		unsigned get_logLevel();
+		void set_logLevel(unsigned level);
+		void set_file_handler(FILE* dest);
+	private: 
+		unsigned logLevel;
+		FILE* logDst; 
+		uint32_t pc;
+	    uint32_t pcNext;
+	    uint32_t regs[32];
+	    mips_mem_h mem;
+		uint32_t HI;
+		uint32_t LO;
+	};
 
 /*! Gets the pc for the next instruction.
 	
@@ -107,7 +113,7 @@ mips_error mips_cpu_get_pc(
 	much if under some exceptions it doesn't quite work.
 */
 mips_error mips_cpu_step(
-	mips_cpu_h state	//! Valid (non-empty) handle to a CPU
+	mips_cpu* state	//! Valid (non-empty) handle to a CPU
 );
 
 /*! Controls printing of diagnostic and debug messages.
