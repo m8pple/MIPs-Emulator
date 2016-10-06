@@ -36,7 +36,7 @@ e = cpu->set_register(8, 0x80000000);
         |
         (42ul << 0);
 		
-	slt(mem, cpu, instr, 0, fp);
+	slt(mem, cpu, instr, 0);
 	
 	instr =
 		((8ul << 26) // opcode = 0
@@ -48,7 +48,7 @@ e = cpu->set_register(8, 0x80000000);
         (45ul << 0))
         ;  
 	e=cpu->set_register(9, 10);
-	addi(mem, cpu, instr, 55, fp);
+	addi(mem, cpu, instr, 55);
 	
 	 instr =
 		((4ul << 26) // opcode = 0
@@ -61,7 +61,7 @@ e = cpu->set_register(8, 0x80000000);
         ; 
 	 e=cpu->set_register(9, 10);
 	 e=cpu->set_register(19, 10);		
-	 beq(mem, cpu, instr, 28, fp);
+	 beq(mem, cpu, instr, 28);
  
 	  instr =
 		((4ul << 26) // opcode = 0
@@ -74,7 +74,7 @@ e = cpu->set_register(8, 0x80000000);
         ; 
 	 e=cpu->set_register(9, 10);
 	 e=cpu->set_register(19, 11);		
-	 beq(mem, cpu, instr, 36, fp);
+	 beq(mem, cpu, instr, 36);
 
 	instr =
         (7ul << 26) // opcode = 0
@@ -87,7 +87,7 @@ e = cpu->set_register(8, 0x80000000);
         ;
 	e = cpu->set_register(6, 1);
 	
-	bgtz(mem, cpu, instr, 52 , fp);	
+	bgtz(mem, cpu, instr, 52 );	
 
 	instr =
         (1ul << 26) // opcode = 0
@@ -100,7 +100,7 @@ e = cpu->set_register(8, 0x80000000);
         ;
 	e = cpu->set_register(6, -1);
 	
-	bltz(mem, cpu, instr, 68, fp);	
+	bltz(mem, cpu, instr, 68);	
 	
 	instr =
         (1ul << 26) // opcode = 0
@@ -113,7 +113,7 @@ e = cpu->set_register(8, 0x80000000);
         ;
 	e = cpu->set_register(6, 2);
 	
-	bltz(mem, cpu, instr, 76, fp);
+	bltz(mem, cpu, instr, 76);
 	
 		
 
@@ -127,7 +127,7 @@ e = cpu->set_register(8, 0x80000000);
         (16ul << 0))
         ;  	
 	e=cpu->set_register(9, 10);
-	XORI(mem, cpu, instr, 26, fp);
+	XORI(mem, cpu, instr, 26);
 	 
 	  instr =
 	   ((35ul << 26) // opcode = 0
@@ -151,7 +151,7 @@ e = cpu->set_register(8, 0x80000000);
 			rec
 		);
 	 e=cpu->set_register(9, 4);
-	lw(mem, cpu, instr, 0xFF00, fp);
+	lw(mem, cpu, instr, 0xFF00);
 	 
 	instr =
 		(0ul << 26) // opcode = 0
@@ -169,7 +169,7 @@ e = cpu->set_register(8, 0x80000000);
     // 2 - put register values in cpu
     e=cpu->set_register(9, 40);
     e=cpu->set_register(10, 50);
-    OR(mem, cpu, instr, 40| 50, fp);
+    OR(mem, cpu, instr, 40| 50);
 
 	 instr =
 		(9ul << 26) // opcode = 0
@@ -182,7 +182,7 @@ e = cpu->set_register(8, 0x80000000);
         ;  
     e=cpu->set_register(9, 40);
 	
-    addiu(mem, cpu, instr, 50, fp);
+    addiu(mem, cpu, instr, 50);
  
    	instr =
         (0ul << 26) // opcode = 0
@@ -200,7 +200,7 @@ e = cpu->set_register(8, 0x80000000);
     // 2 - put register values in cpu
     e=cpu->set_register(22, 50);
     e=cpu->set_register(23, 40);
-    subu(mem, cpu, instr, 10, fp);  
+    subu(mem, cpu, instr, 10);  
     
 	// 1 - Setup an instruction in ram
 	instr =
@@ -219,7 +219,7 @@ e = cpu->set_register(8, 0x80000000);
     // 2 - put register values in cpu
     e=cpu->set_register(25, 1);
     e=cpu->set_register(27, 1);
-    XOR(mem, cpu, instr, 0, fp);    
+    XOR(mem, cpu, instr, 0);    
     
     // 1 - Setup an instruction in ram
     // addu r3, r4, r5
@@ -239,7 +239,7 @@ e = cpu->set_register(8, 0x80000000);
     // 2 - put register values in cpu
     e=cpu->set_register(14, 40);
     e=cpu->set_register(15, 50);
-    AND(mem, cpu, instr, (40 & 50), fp);
+    AND(mem, cpu, instr, (40 & 50));
     
    	instr =
         (0ul << 26) // opcode = 0
@@ -258,7 +258,7 @@ e = cpu->set_register(8, 0x80000000);
     // 2 - put register val
 	e=cpu->set_register(4, 1);
     e=cpu->set_register( 5, 2);
-    sllv(mem, cpu, instr, 4, fp);
+    sllv(mem, cpu, instr, 4);
 
    	instr =
         (0ul << 26) // opcode = 0
@@ -276,7 +276,7 @@ e = cpu->set_register(8, 0x80000000);
     // 2 - put register values in cpu
     e=cpu->set_register( 4, 40);
     e=cpu->set_register( 5, 50);
-	addu(mem, cpu, instr, 90, fp);   
+	addu(mem, cpu, instr, 90);   
     
     // 1 - Setup an instruction in ram
     instr =
@@ -294,7 +294,7 @@ e = cpu->set_register(8, 0x80000000);
 
     e=cpu->set_register( 4, 0xFFFFFFFF);
     e=cpu->set_register( 5, 0xFFFFFFFF);
-    add(mem, cpu, instr, 0xFFFFFFFE, fp);
+    add(mem, cpu, instr, 0xFFFFFFFE);
         
     instr =
         (0ul << 26) // opcode = 0
@@ -312,7 +312,7 @@ e = cpu->set_register(8, 0x80000000);
     // 2 - put register values in cpu
     e=cpu->set_register( 4, 4294967296);
     e=cpu->set_register( 5, 4294967296);
-	addu(mem, cpu, instr, 0, fp);
+	addu(mem, cpu, instr, 0);
 	
 	    
     // 1 - Setup an instruction in ram
@@ -329,7 +329,7 @@ e = cpu->set_register(8, 0x80000000);
     
     // 2 - put register values in cpu
     e= cpu->set_register( 19, 28); 
-    sw (mem, cpu,  instr, 28, fp); 
+    sw (mem, cpu,  instr, 28); 
 	 
 	 uint32_t res = 0xA4218926;
 	 uint8_t buffer[4]; 
@@ -353,7 +353,7 @@ e = cpu->set_register(8, 0x80000000);
         (4ul << 0)
 ;		// dst = r0
 	e = cpu->set_register( 9, 29);
-   LB(mem, cpu, instr, 33, fp);
+   LB(mem, cpu, instr, 33);
    
     res = 0xA4FF89FF; 
     buffer[0]=(res >>24)&0xFF;
@@ -376,7 +376,7 @@ e = cpu->set_register(8, 0x80000000);
         (4ul << 0)
 ;		// dst = r0
 	e = cpu->set_register( 9, 29);
-   LB(mem, cpu, instr, -1, fp);
+   LB(mem, cpu, instr, -1);
    
    instr =
         (36ul << 26) // opcode = 0
@@ -388,7 +388,7 @@ e = cpu->set_register(8, 0x80000000);
         (4ul << 0)
 ;		// dst = r0
 	e = cpu->set_register( 9, 29);
-   LBU(mem, cpu, instr, 0xFF, fp);
+   LBU(mem, cpu, instr, 0xFF);
    
    instr =
         (40ul << 26) // opcode = 0
@@ -401,7 +401,7 @@ e = cpu->set_register(8, 0x80000000);
 ;		
 	e = cpu->set_register( 9, 25);
 	e = cpu->set_register( 19, 10);
-	SB(mem, cpu, instr, 10, fp);
+	SB(mem, cpu, instr, 10);
 	
 	instr = 
 		(0ul << 26)
@@ -417,7 +417,7 @@ e = cpu->set_register(8, 0x80000000);
         (0x22 << 0);
    e = cpu->set_register( 6, -8);
    e = cpu->set_register( 8, -2);
-   sub(mem, cpu, instr, -6, fp);
+   sub(mem, cpu, instr, -6);
    
      instr =
 		((15ul << 26) // opcode = 0
@@ -428,7 +428,7 @@ e = cpu->set_register(8, 0x80000000);
         |
         (0xFFFFul << 0))
         ;  
-	lui(mem, cpu, instr, 0xFFFF0000, fp);
+	lui(mem, cpu, instr, 0xFFFF0000);
 
    instr = 
 		(0ul << 26)
@@ -444,7 +444,7 @@ e = cpu->set_register(8, 0x80000000);
         (0x22 << 0);
    e = cpu->set_register( 6, -2);
    e = cpu->set_register( 8, -2);
-   sub(mem, cpu, instr, 0, fp);
+   sub(mem, cpu, instr, 0);
    
    instr = 
 		(5ul << 26)
@@ -459,7 +459,7 @@ e = cpu->set_register(8, 0x80000000);
    e = cpu->set_register( 10, -4);
    uint32_t x; 
    x = cpu->get_pc(); 
-   bne(mem, cpu, instr, x + 8, fp);
+   bne(mem, cpu, instr, x + 8);
  
    instr = 
 		(5ul << 26)
@@ -472,7 +472,7 @@ e = cpu->set_register(8, 0x80000000);
    x = cpu->get_pc();
    e = cpu->set_register( 6, 1);
    e = cpu->set_register( 8, 1);
-   bne(mem, cpu, instr, x + 8, fp);
+   bne(mem, cpu, instr, x + 8);
    
    instr = 
 		(33ul << 26)
@@ -494,7 +494,7 @@ e = cpu->set_register(8, 0x80000000);
   4, 
   buffer
   ); 
-  lh(mem, cpu, instr, 0x1234, fp);
+  lh(mem, cpu, instr, 0x1234);
 
  instr =
         (0ul << 26) // opcode = 0
@@ -510,7 +510,7 @@ e = cpu->set_register(8, 0x80000000);
         (0x2B << 0);
 e = cpu->set_register( 6, 0xFFFFFFFF);
 e = cpu->set_register( 7, 0x00000002);
-SLTU(mem, cpu, instr, 0, fp);
+SLTU(mem, cpu, instr, 0);
 
 instr = 
 		(0ul << 26) // opcode = 0
@@ -524,7 +524,7 @@ instr =
         (0ul << 6) // shift = 0
         |
         (0x2A << 0);
-slt(mem, cpu, instr, 1, fp);
+slt(mem, cpu, instr, 1);
 
 
 instr = 
@@ -540,7 +540,7 @@ instr =
         |
         (0x03 << 0);
 e = cpu->set_register( 7, 64); 
-SRA(mem, cpu, instr, 8, fp);
+SRA(mem, cpu, instr, 8);
 
 instr = 
 		(0ul << 26) // opcode = 0
@@ -555,7 +555,7 @@ instr =
         |
         (0x03 << 0);
 e = cpu->set_register( 7, -64); 
-SRA(mem, cpu, instr, -8, fp);
+SRA(mem, cpu, instr, -8);
 
 instr = 
 		(0ul << 26) // opcode = 0
@@ -570,7 +570,7 @@ instr =
         |
         (0x03 << 0);
 e = cpu->set_register( 7, 10); 
-SRA(mem, cpu, instr, 10, fp);
+SRA(mem, cpu, instr, 10);
 
 
 instr = 
@@ -587,7 +587,7 @@ instr =
         (0x07 << 0);
 	e = cpu->set_register( 8, -1);
 	e = cpu->set_register( 7, 0xFFFFFFFF); 
-	SRAV(mem, cpu, instr, -1, fp);
+	SRAV(mem, cpu, instr, -1);
 	
 instr = 
 		(0ul << 26) // opcode = 0
@@ -603,7 +603,7 @@ instr =
         (0x07 << 0);
 	e = cpu->set_register( 8, -1);
 	e = cpu->set_register(7, 0xF0000000); 
-	SRAV(mem, cpu, instr, -1, fp);
+	SRAV(mem, cpu, instr, -1);
 	
 instr = 
 		(0ul << 26) // opcode = 0
@@ -619,7 +619,7 @@ instr =
         (0x07 << 0);
 	e = cpu->set_register( 8, -1);
 	e = cpu->set_register( 7, 0x0F000000); 
-	SRAV(mem, cpu, instr, 0, fp);
+	SRAV(mem, cpu, instr, 0);
 	
 	instr = 
 		(0ul << 26) // opcode = 0
@@ -634,7 +634,7 @@ instr =
         |
         (0x02 << 0);
 	e = cpu->set_register( 7, 0x0F000000); 
-	SRL(mem, cpu, instr, 15, fp);
+	SRL(mem, cpu, instr, 15);
 
 	instr = 
 		(0ul << 26) // opcode = 0
@@ -649,7 +649,7 @@ instr =
         |
         (0x02 << 0);
 	e = cpu->set_register( 7, -1); 
-	SRL(mem, cpu, instr, 0x7FFFF, fp);
+	SRL(mem, cpu, instr, 0x7FFFF);
 	
 	
 instr = 
@@ -665,7 +665,7 @@ instr =
         |
         (0x02 << 0);
 	e = cpu->set_register( 7, -2); 
-	SRL(mem, cpu, instr, 15, fp);
+	SRL(mem, cpu, instr, 15);
 	uint8_t recg[4]; recg[0] = 0; recg[1] = 0; recg[2] = 0; recg[3] = 0; 
 	uint32_t pc1 = cpu->get_pc();
 	e = mips_mem_write(
@@ -679,7 +679,7 @@ instr =
 	(2ul << 26)
 	|
 	(10ul << 0);
-	J(mem, cpu, instr, 0x00000028, fp);
+	J(mem, cpu, instr, 0x00000028);
 	
 e=cpu->set_register( 6, 0x0000000A);
 e= cpu->set_register( 7, 0x0000000A);
@@ -697,7 +697,7 @@ e= cpu->set_register( 7, 0x0000000A);
         |
         (0x20 << 0);
 
-add(mem, cpu, instr, 0, fp);
+add(mem, cpu, instr, 0);
 
 
 instr =
@@ -710,7 +710,7 @@ instr =
         (45ul << 0))
         ;  
 	e=cpu->set_register( 9, -10);
-	addi(mem, cpu, instr, 35, fp);
+	addi(mem, cpu, instr, 35);
 	
 instr =
 		((8ul << 26) // opcode = 0
@@ -722,7 +722,7 @@ instr =
         (45ul << 0))
         ;  
 	e=cpu->set_register( 9, -90);
-	addi(mem, cpu, instr, -45, fp);
+	addi(mem, cpu, instr, -45);
 	
 	instr =
 		((8ul << 26) // opcode = 0
@@ -734,14 +734,14 @@ instr =
         (45ul << 0))
         ;  
 	e=cpu->set_register( 9, -2);
-	addi(mem, cpu, instr, 43, fp);
+	addi(mem, cpu, instr, 43);
 	
 	
 	instr = 
 	(2ul << 26)
 	|
 	(12ul << 0);
-	J(mem, cpu, instr, 0x00000030, fp);
+	J(mem, cpu, instr, 0x00000030);
 	mips_test_end_suite();
     
     return 0;
@@ -1339,17 +1339,14 @@ void sw(mips_mem_h mem, mips_cpu* cpu, uint32_t instr, uint32_t val){
 	uint32_t src1 = (instr >> 21) & 0x1F;
 	uint16_t src2 = (instr >> 0) & 0xFFFF;
 	int32_t dat; 
-	if((src2 >> 15) == 1){
+	if((src2 >> 15) == 1)
 		dat = int32_t(src2);
-	}
-	else{
+	else
 		dat = uint32_t(src2);
-	}
 	uint32_t got;
 	e = cpu->get_register( src1, &got);
 	uint32_t y = dat + got;
 	uint32_t mod = y % 4;
-	uint32_t addr = y - mod; 
 	uint8_t data[4];
 	e = mips_mem_read(
 	mem,
